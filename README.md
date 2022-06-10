@@ -1,7 +1,9 @@
 # turborand
 
-[![License](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue.svg)](
-https://github.com/Bluefinger/turborand)
+[![CI](https://github.com/Bluefinger/turborand/actions/workflows/ci.yml/badge.svg)](https://github.com/Bluefinger/turborand/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue.svg)](https://github.com/Bluefinger/turborand)
+[![Cargo](https://img.shields.io/crates/v/turborand.svg)](https://crates.io/crates/turborand)
+[![Documentation](https://docs.rs/turborand/badge.svg)](https://docs.rs/turborand)
 
 A fast random number generator.
 
@@ -49,7 +51,7 @@ let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.

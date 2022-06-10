@@ -341,7 +341,7 @@ impl<S: State> Rng<S> {
 
     /// Returns a random `f32` value between `-1.0` and `1.0`.
     #[inline]
-    pub fn f32_normalised(&self) -> f32 {
+    pub fn f32_normalized(&self) -> f32 {
         (self.gen_i32() as f32) / (i32::MAX as f32)
     }
 
@@ -353,7 +353,7 @@ impl<S: State> Rng<S> {
 
     /// Returns a random `f64` value between `-1.0` and `1.0`.
     #[inline]
-    pub fn f64_normalised(&self) -> f64 {
+    pub fn f64_normalized(&self) -> f64 {
         (self.gen_i64() as f64) / (i64::MAX as f64)
     }
 

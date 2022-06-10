@@ -105,7 +105,7 @@ macro_rules! range_unsigned {
 }
 
 macro_rules! range_signed {
-    ($value:tt, $unsigned:tt, $bigger:tt, $source:ident, $doc:tt) => {
+    ($value:tt, $unsigned:tt, $bigger:tt, $doc:tt) => {
         #[doc = $doc]
         ///
         /// Panics if the range is empty.
@@ -261,28 +261,24 @@ impl<S: State> Rng<S> {
         i64,
         u64,
         u128,
-        gen_u64,
         "Returns a random `i64` within a given range bound."
     );
     range_signed!(
         i32,
         u32,
         u64,
-        gen_u32,
         "Returns a random `i32` within a given range bound."
     );
     range_signed!(
         i16,
         u16,
         u32,
-        gen_u16,
         "Returns a random `i16` within a given range bound."
     );
     range_signed!(
         i8,
         u8,
         u16,
-        gen_u8,
         "Returns a random `i8` within a given range bound."
     );
 
@@ -313,7 +309,6 @@ impl<S: State> Rng<S> {
         isize,
         usize,
         u32,
-        gen_usize,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "32")]
@@ -321,7 +316,6 @@ impl<S: State> Rng<S> {
         isize,
         usize,
         u64,
-        gen_usize,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "64")]
@@ -329,7 +323,6 @@ impl<S: State> Rng<S> {
         isize,
         usize,
         u128,
-        gen_usize,
         "Returns a random `isize` within a given range bound."
     );
 

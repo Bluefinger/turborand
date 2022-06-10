@@ -8,6 +8,7 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Bluefinger/turborand"
 keywords = ["fast", "rand", "random", "wyrand"]
 categories = ["algorithms"]
+exclude = ["/.*"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 instant = "0.1"

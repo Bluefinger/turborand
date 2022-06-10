@@ -87,7 +87,7 @@ macro_rules! range_unsigned {
                 Bound::Unbounded => $value::MAX,
             };
 
-            assert!(upper > lower);
+            assert!(upper > lower, "Range should not be zero sized or invalid");
 
             let upper = upper.saturating_sub(lower);
             let mut value = self.$source();
@@ -122,7 +122,7 @@ macro_rules! range_signed {
                 Bound::Unbounded => $value::MAX,
             };
 
-            assert!(upper > lower);
+            assert!(upper > lower, "Range should not be zero sized or invalid");
 
             let lower = lower.wrapping_sub($value::MIN) as $unsigned;
             let upper = upper.wrapping_sub($value::MIN) as $unsigned;

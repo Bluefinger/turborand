@@ -1,5 +1,8 @@
 use crate::{Cell, Debug};
 
+#[cfg(feature = "atomic")]
+use crate::{AtomicU64, Ordering};
+
 /// Trait for implementing `State` to be used in a Rng.
 ///
 /// Those implementing `State` should also ensure to implement
@@ -46,6 +49,47 @@ impl Debug for CellState {
     }
 }
 
+/// `Send` and `Sync` state for Rng. Stores the current
+/// state of the PRNG in a `AtomicU64`.
+#[cfg(feature = "atomic")]
+#[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
+#[repr(transparent)]
+pub struct AtomicState(AtomicU64);
+
+#[cfg(feature = "atomic")]
+impl State for AtomicState {
+    fn with_seed(seed: u64) -> Self
+    where
+        Self: Sized {
+        Self(AtomicU64::new(seed))
+    }
+
+    fn get(&self) -> u64 {
+        self.0.load(Ordering::Relaxed)
+    }
+
+    fn set(&self, value: u64) {
+        self.0.store(value, Ordering::Relaxed);
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl PartialEq for AtomicState {
+    fn eq(&self, other: &Self) -> bool {
+        self.get() == other.get()
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl Eq for AtomicState {}
+
+#[cfg(feature = "atomic")]
+impl Debug for AtomicState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("AtomicState").finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,6 +109,26 @@ mod tests {
     fn cell_state_no_leaking_debug() {
         let state = CellState::with_seed(Default::default());
 
-        assert_eq!(format!("{:?}", state), "CellState");
+        assert_eq!(format!("{state:?}"), "CellState");
+    }
+
+    #[cfg(feature = "atomic")]
+    #[test]
+    fn atomic_state() {
+        let state = AtomicState::with_seed(1);
+
+        assert_eq!(state.get(), 1);
+
+        state.set(5);
+
+        assert_eq!(state.get(), 5);
+    }
+
+    #[cfg(feature = "atomic")]
+    #[test]
+    fn atomic_state_no_leaking_debug() {
+        let state = AtomicState::with_seed(Default::default());
+
+        assert_eq!(format!("{state:?}"), "AtomicState");
     }
 }

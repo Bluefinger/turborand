@@ -55,6 +55,9 @@ use instant::Instant;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
+#[cfg(feature = "atomic")]
+use std::sync::atomic::{AtomicU64, Ordering};
+
 mod entropy;
 mod internal;
 mod source;

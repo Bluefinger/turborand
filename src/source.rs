@@ -1,17 +1,22 @@
-use crate::internal::{State, CellState};
+use crate::{
+    internal::{CellState, State},
+    Debug,
+};
 
 /// A Wyrand Random Number Generator
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub(crate) struct WyRand<S: State = CellState> {
+pub(crate) struct WyRand<S: Debug + State = CellState> {
     state: S,
 }
 
-impl<S: State> WyRand<S> {
+impl<S: State + Debug> WyRand<S> {
     /// Creates a new RNG source with seeded value.
     #[inline]
     pub(crate) fn with_seed(seed: u64) -> Self {
-        Self { state: S::with_seed(seed) }
+        Self {
+            state: S::with_seed(seed),
+        }
     }
 
     /// Reseeds an existing RNG source with a new seed value.
@@ -31,12 +36,18 @@ impl<S: State> WyRand<S> {
     }
 }
 
-impl<S: State> Clone for WyRand<S> {
+impl<S: State + Debug> Clone for WyRand<S> {
     /// Deterministically clones the RNG source.
     fn clone(&self) -> Self {
         Self {
             state: S::with_seed(u64::from_le_bytes(self.rand())),
         }
+    }
+}
+
+impl<S: State + Debug> Debug for WyRand<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WyRand").field(&self.state).finish()
     }
 }
 
@@ -105,5 +116,12 @@ mod tests {
             &cloned2.rand(),
             "cloning should be deterministic"
         );
+    }
+
+    #[test]
+    fn no_leaking_debug() {
+        let rng = WyRand::<CellState>::with_seed(Default::default());
+
+        assert_eq!(format!("{:?}", rng), "WyRand(CellState)");
     }
 }

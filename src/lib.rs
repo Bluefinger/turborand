@@ -65,7 +65,7 @@ use crate::{entropy::generate_entropy, source::WyRand};
 /// A Random Number generator, powered by the `WyRand` algorithm.
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Rng<S: State>(WyRand<S>);
+pub struct Rng<S: State + Debug>(WyRand<S>);
 
 macro_rules! range_unsigned {
     ($value:tt, $bigger:tt, $source:ident, $doc:tt) => {
@@ -164,7 +164,7 @@ macro_rules! rng {
     };
 }
 
-impl<S: State> Rng<S> {
+impl<S: State + Debug> Rng<S> {
     /// Creates a new RNG with a randomised seed.
     #[inline]
     #[must_use]
@@ -463,7 +463,7 @@ impl<S: State> Rng<S> {
     }
 }
 
-impl<S: State> Default for Rng<S> {
+impl<S: State + Debug> Default for Rng<S> {
     /// Initialises a default instance of `Rng`. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
@@ -481,7 +481,7 @@ impl<S: State> Default for Rng<S> {
     }
 }
 
-impl<S: State> Clone for Rng<S> {
+impl<S: State + Debug> Clone for Rng<S> {
     /// Clones the RNG by deterministically deriving a new RNG based on the initial
     /// seed.
     ///
@@ -506,9 +506,9 @@ impl<S: State> Clone for Rng<S> {
     }
 }
 
-impl<S: State> Debug for Rng<S> {
+impl<S: State + Debug> Debug for Rng<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Rng").finish()
+        f.debug_tuple("Rng").field(&self.0).finish()
     }
 }
 
@@ -526,7 +526,7 @@ mod tests {
     fn no_leaking_debug() {
         let rng = Rng::<CellState>::with_seed(Default::default());
 
-        assert_eq!(format!("{:?}", rng), "Rng");
+        assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
     }
 
     #[test]

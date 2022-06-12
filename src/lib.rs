@@ -160,10 +160,35 @@ macro_rules! rand_int_from_bytes {
 }
 
 /// Initialises an `Rng` instance with a `CellState`. Not thread safe.
+/// Can be used with and without a seed value. If invoked without
+/// a seed value, it will initialise a default instance with a generated
+/// seed.
+///
+/// ```
+/// use turborand::*;
+///
+/// let rand = rng!();
+///
+/// let value = rand.bool();
+/// ```
+///
+/// Else, pass in a `u64` value to get an `Rng` instance with the seed
+/// initialised to that value.
+///
+/// ```
+/// use turborand::*;
+///
+/// let rand = rng!(128u64);
+///
+/// let value = rand.bool();
+/// ```
 #[macro_export]
 macro_rules! rng {
     () => {
         Rng::<CellState>::default()
+    };
+    ($seed:expr) => {
+        Rng::<CellState>::with_seed($seed)
     };
 }
 
@@ -527,14 +552,14 @@ mod tests {
 
     #[test]
     fn no_leaking_debug() {
-        let rng = Rng::<CellState>::with_seed(Default::default());
+        let rng = rng!(Default::default());
 
         assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
     }
 
     #[test]
     fn index_smoke_testing() {
-        let rng = Rng::<CellState>::with_seed(Default::default());
+        let rng = rng!(Default::default());
 
         for _ in 0..1000 {
             let index = rng.usize(4..10);
@@ -569,7 +594,7 @@ mod tests {
 
     #[test]
     fn unbounded_range_smoke_testing() {
-        let rng = Rng::<CellState>::with_seed(Default::default());
+        let rng = rng!(Default::default());
 
         for _ in 0..1000 {
             let index = rng.u8(..);
@@ -592,7 +617,7 @@ mod tests {
 
     #[test]
     fn sample_smoke_testing() {
-        let rng = Rng::<CellState>::with_seed(Default::default());
+        let rng = rng!(Default::default());
 
         let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
         let mut sampled = [0; 8];
@@ -612,7 +637,7 @@ mod tests {
 
     #[test]
     fn weighted_sample_smoke_testing() {
-        let rng = Rng::<CellState>::with_seed(Default::default());
+        let rng = rng!(Default::default());
 
         let samples: [u32; 5] = [0, 1, 2, 3, 4];
 

@@ -96,7 +96,7 @@ macro_rules! range_unsigned {
             let mut value = self.$source();
             let mut m = (upper as $bigger).wrapping_mul(value as $bigger);
             if (m as $value) < upper {
-                let t = (!upper).wrapping_sub(1) % upper;
+                let t = (!upper + 1) % upper;
                 while (m as $value) < t {
                     value = self.$source();
                     m = (upper as $bigger).wrapping_mul(value as $bigger);
@@ -115,13 +115,13 @@ macro_rules! range_signed {
         #[inline]
         pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
             let lower = match bounds.start_bound() {
-                Bound::Included(lower) => *lower,
-                Bound::Excluded(lower) => lower.saturating_add(1),
+                Bound::Included(lower) => lower.saturating_add(1),
+                Bound::Excluded(lower) => lower.saturating_add(2),
                 Bound::Unbounded => $value::MIN,
             };
             let upper = match bounds.end_bound() {
-                Bound::Included(upper) => *upper,
-                Bound::Excluded(upper) => upper.saturating_sub(1),
+                Bound::Included(upper) => upper.saturating_add(1),
+                Bound::Excluded(upper) => *upper,
                 Bound::Unbounded => $value::MAX,
             };
 
@@ -558,7 +558,7 @@ mod tests {
     }
 
     #[test]
-    fn index_smoke_testing() {
+    fn range_smoke_testing() {
         let rng = rng!(Default::default());
 
         for _ in 0..1000 {
@@ -587,6 +587,16 @@ mod tests {
             assert!(
                 (4..=15).contains(&index),
                 "Must generate a number within 4 and inclusively 15, received: {}",
+                index
+            );
+        }
+
+        for _ in 0..1000 {
+            let index = rng.isize(-10..10);
+
+            assert!(
+                (-10..10).contains(&index),
+                "Must generate a number within -10 and 10, received: {}",
                 index
             );
         }
@@ -632,6 +642,71 @@ mod tests {
             &sampled,
             &[214, 238, 267, 241, 237, 276, 261, 266],
             "samples will occur across all array items at statistically equal chance"
+        );
+    }
+
+    #[test]
+    fn unsigned_range_spread_test() {
+        let rng = rng!(Default::default());
+
+        let actual_histogram: BTreeMap<u32, u32> = repeat_with(|| rng.u32(1..=10)).take(1000).fold(
+            BTreeMap::new(),
+            |mut histogram, key| {
+                *histogram.entry(key).or_default() += 1;
+
+                histogram
+            },
+        );
+
+        let expected_histogram = BTreeMap::from_iter(vec![
+            (1, 97),
+            (2, 105),
+            (3, 98),
+            (4, 113),
+            (5, 109),
+            (6, 80),
+            (7, 99),
+            (8, 86),
+            (9, 102),
+            (10, 111),
+        ]);
+
+        assert_eq!(
+            actual_histogram, expected_histogram,
+            "signed samples should match in frequency to the expected histogram"
+        );
+    }
+
+    #[test]
+    fn signed_range_spread_test() {
+        let rng = rng!(Default::default());
+
+        let actual_histogram: BTreeMap<i32, u32> = repeat_with(|| rng.i32(-5..=5)).take(1000).fold(
+            BTreeMap::new(),
+            |mut histogram, key| {
+                *histogram.entry(key).or_default() += 1;
+
+                histogram
+            },
+        );
+
+        let expected_histogram = BTreeMap::from_iter(vec![
+            (-5, 91),
+            (-4, 89),
+            (-3, 97),
+            (-2, 90),
+            (-1, 105),
+            (0, 94),
+            (1, 73),
+            (2, 81),
+            (3, 81),
+            (4, 101),
+            (5, 98),
+        ]);
+
+        assert_eq!(
+            actual_histogram, expected_histogram,
+            "signed samples should match in frequency to the expected histogram"
         );
     }
 

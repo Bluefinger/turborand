@@ -384,7 +384,7 @@ impl<S: State + Debug> Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng = Rng::<CellState>::with_seed(Default::default());
+    /// let rng = rng!(Default::default());
     ///
     /// assert_eq!(rng.bool(), true);
     /// ```
@@ -405,7 +405,7 @@ impl<S: State + Debug> Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng = Rng::<CellState>::with_seed(Default::default());
+    /// let rng = rng!(Default::default());
     ///
     /// assert_eq!(rng.chance(1.0), true);
     /// ```
@@ -430,7 +430,7 @@ impl<S: State + Debug> Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng = Rng::<CellState>::with_seed(Default::default());
+    /// let rng = rng!(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5, 6];
     ///
@@ -462,7 +462,7 @@ impl<S: State + Debug> Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng = Rng::<CellState>::with_seed(Default::default());
+    /// let rng = rng!(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5, 6];
     ///
@@ -517,8 +517,8 @@ impl<S: State + Debug> Clone for Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng1 = Rng::<CellState>::with_seed(Default::default());
-    /// let rng2 = Rng::<CellState>::with_seed(Default::default());
+    /// let rng1 = rng!(Default::default());
+    /// let rng2 = rng!(Default::default());
     ///
     /// // Use the RNGs once each.
     /// rng1.bool();

@@ -96,7 +96,7 @@ macro_rules! range_unsigned {
             let mut value = self.$source();
             let mut m = (upper as $bigger).wrapping_mul(value as $bigger);
             if (m as $value) < upper {
-                let t = (!upper + 1) % upper;
+                let t = (!upper).wrapping_sub(1) % upper;
                 while (m as $value) < t {
                     value = self.$source();
                     m = (upper as $bigger).wrapping_mul(value as $bigger);

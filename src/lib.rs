@@ -192,6 +192,43 @@ macro_rules! rng {
     };
 }
 
+/// Initialises an `Rng` instance with an `AtomicState`. Thread safe.
+/// Can be used with and without a seed value. If invoked without
+/// a seed value, it will initialise a default instance with a generated
+/// seed.
+///
+/// ```
+/// use turborand::*;
+/// use std::sync::Arc;
+///
+/// let rand = Arc::new(atomic_rng!());
+///
+/// let value = rand.bool();
+/// ```
+///
+/// Else, pass in a `u64` value to get an `Rng` instance with the seed
+/// initialised to that value.
+///
+/// ```
+/// use turborand::*;
+/// use std::sync::Arc;
+///
+/// let rand = Arc::new(atomic_rng!(128u64));
+///
+/// let value = rand.bool();
+/// ```
+#[cfg(feature = "atomic")]
+#[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
+#[macro_export]
+macro_rules! atomic_rng {
+    () => {
+        Rng::<AtomicState>::default()
+    };
+    ($seed:expr) => {
+        Rng::<AtomicState>::with_seed($seed)
+    };
+}
+
 impl<S: State + Debug> Rng<S> {
     /// Creates a new RNG with a randomised seed.
     #[inline]

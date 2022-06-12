@@ -51,6 +51,26 @@ impl Debug for CellState {
 
 /// `Send` and `Sync` state for Rng. Stores the current
 /// state of the PRNG in a `AtomicU64`.
+///
+/// ```
+/// use turborand::*;
+/// use std::sync::Arc;
+/// use std::thread;
+///
+/// let rand = Arc::new(atomic_rng!()); // Will not compile with `CellState`
+/// let rand2 = rand.clone();
+///
+/// let thread_01 = thread::spawn(move || {
+///     rand.u64(..)
+/// });
+///
+/// let thread_02 = thread::spawn(move || {
+///     rand2.u64(..)
+/// });
+///
+/// let res1 = thread_01.join();
+/// let res2 = thread_02.join();
+/// ```
 #[cfg(feature = "atomic")]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
 #[repr(transparent)]
@@ -60,7 +80,8 @@ pub struct AtomicState(AtomicU64);
 impl State for AtomicState {
     fn with_seed(seed: u64) -> Self
     where
-        Self: Sized {
+        Self: Sized,
+    {
         Self(AtomicU64::new(seed))
     }
 

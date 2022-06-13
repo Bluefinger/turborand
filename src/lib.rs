@@ -169,6 +169,18 @@ macro_rules! rand_int_from_bytes {
     };
 }
 
+macro_rules! rand_characters {
+    ($func:ident, $chars:expr, $doc:tt) => {
+        #[doc = $doc]
+        #[inline]
+        pub fn $func(&self) -> char {
+            const CHARS: &[u8] = $chars;
+
+            self.sample(CHARS).map(|&value| value as char).unwrap()
+        }
+    };
+}
+
 /// Initialises an `Rng` instance with a `CellState`. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
@@ -549,18 +561,18 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Shuffles a slice randomly in O(n) time.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use turborand::*;
-    /// 
+    ///
     /// let rng = rng!(Default::default());
-    /// 
+    ///
     /// let values = [1, 2, 3, 4, 5];
     /// let mut shuffled = values.clone();
-    /// 
+    ///
     /// rng.shuffle(&mut shuffled);
-    /// 
+    ///
     /// assert_ne!(&shuffled, &values);
     /// ```
     #[inline]
@@ -568,6 +580,51 @@ impl<S: State + Debug> Rng<S> {
         (1..slice.len())
             .rev()
             .for_each(|index| slice.swap(index, self.usize(..=index)));
+    }
+
+    rand_characters!(
+        alphabetic,
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+        "Generates a random `char` in ranges a-z and A-Z."
+    );
+    rand_characters!(
+        alphanumeric,
+        b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+        "Generates a random `char` in ranges a-z, A-Z and 0-9."
+    );
+    rand_characters!(
+        lowercase,
+        b"abcdefghijklmnopqrstuvwxyz",
+        "Generates a random `char` in the range a-z."
+    );
+    rand_characters!(
+        uppercase,
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "Generates a random `char` in the range A-Z."
+    );
+
+    /// Generate a random digit in the given `radix`.
+    ///
+    /// Digits are represented by `char`s in ranges 0-9 and a-z.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `radix is zero or greater than 36.
+    #[inline]
+    pub fn digit(&self, radix: u8) -> char {
+        match radix {
+            0 => panic!("radix cannot be zero"),
+            1..=36 => {
+                let num = self.u8(..radix);
+
+                if num < 10 {
+                    (b'0' + num) as char
+                } else {
+                    (b'a' + num - 10) as char
+                }
+            }
+            _ => panic!("radix cannot be greater than 36"),
+        }
     }
 }
 
@@ -836,5 +893,105 @@ mod tests {
             .for_each(|r| r.shuffle(&mut values));
 
         assert_eq!(&values, &[2, 5, 3, 1, 6, 4]);
+    }
+
+    #[test]
+    fn character_smoke_testing() {
+        let rng = rng!(Default::default());
+
+        for _ in 0..1000 {
+            let character = rng.alphabetic();
+
+            assert!(
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".contains(character),
+                "Must output an alphabetic character within range, received '{}'",
+                character
+            );
+        }
+
+        for _ in 0..1000 {
+            let character = rng.alphanumeric();
+
+            assert!(
+                "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".contains(character),
+                "Must output an alphanumeric character within range, received '{}'",
+                character
+            );
+        }
+
+        for _ in 0..1000 {
+            let character = rng.lowercase();
+
+            assert!(
+                "abcdefghijklmnopqrstuvwxyz".contains(character),
+                "Must output a lowercase character within range, received '{}'",
+                character
+            );
+        }
+
+        for _ in 0..1000 {
+            let character = rng.uppercase();
+
+            assert!(
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(character),
+                "Must output an uppercase character within range, received '{}'",
+                character
+            );
+        }
+    }
+
+    #[test]
+    fn digit_smoke_testing() {
+        let rng = rng!(Default::default());
+
+        for _ in 0..1000 {
+            let digit = rng.digit(10);
+
+            assert!(
+                "0123456789".contains(digit),
+                "Must output a digit within radix, received '{}'",
+                digit
+            );
+        }
+
+        for _ in 0..1000 {
+            let digit = rng.digit(2);
+
+            assert!(
+                "01".contains(digit),
+                "Must output a digit within radix, received '{}'",
+                digit
+            );
+        }
+
+        for _ in 0..1000 {
+            let digit = rng.digit(8);
+
+            assert!(
+                "01234567".contains(digit),
+                "Must output a digit within radix, received '{}'",
+                digit
+            );
+        }
+
+        for _ in 0..1000 {
+            let digit = rng.digit(16);
+
+            assert!(
+                "0123456789abcdef".contains(digit),
+                "Must output a digit within radix, received '{}'",
+                digit
+            );
+        }
+
+        for _ in 0..1000 {
+            let digit = rng.digit(36);
+
+            assert!(
+                "0123456789abcdefghijklmnopqrstuvwxyz".contains(digit),
+                "Must output a digit within radix, received '{}'",
+                digit
+            );
+        }
     }
 }

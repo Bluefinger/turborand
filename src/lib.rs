@@ -606,7 +606,17 @@ impl<S: State + Debug> Rng<S> {
     /// Generate a random digit in the given `radix`.
     ///
     /// Digits are represented by `char`s in ranges 0-9 and a-z.
-    ///
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// 
+    /// let rand = rng!(Default::default());
+    /// 
+    /// let digit = rand.digit(16);
+    /// 
+    /// assert_eq!(&digit, &'2');
+    /// ```
     /// # Panics
     ///
     /// Panics if the `radix is zero or greater than 36.

@@ -43,6 +43,22 @@ fn turborand_benchmark(c: &mut Criterion) {
         let rand = rng!();
         b.iter(|| black_box(rand.i32(..)));
     });
+    c.bench_function("CellRng f64", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.f64()));
+    });
+    c.bench_function("CellRng f32", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.f32()));
+    });
+    c.bench_function("CellRng f64 normalized", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.f64_normalized()));
+    });
+    c.bench_function("CellRng f32 normalized", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.f32_normalized()));
+    });
 }
 
 #[cfg(feature = "atomic")]
@@ -87,6 +103,22 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     c.bench_function("AtomicRng i32 unbounded range", |b| {
         let rand = atomic_rng!();
         b.iter(|| black_box(rand.i32(..)));
+    });
+    c.bench_function("AtomicRng f64", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.f64()));
+    });
+    c.bench_function("AtomicRng f32", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.f32()));
+    });
+    c.bench_function("AtomicRng f64 normalized", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.f64_normalized()));
+    });
+    c.bench_function("AtomicRng f32 normalized", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.f32_normalized()));
     });
 }
 

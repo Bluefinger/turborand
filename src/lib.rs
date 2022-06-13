@@ -547,6 +547,28 @@ impl<S: State + Debug> Rng<S> {
                 .find(|&item| self.chance(weight_sampler(item))),
         }
     }
+
+    /// Shuffles a slice randomly in O(n) time.
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// 
+    /// let rng = rng!(Default::default());
+    /// 
+    /// let values = [1, 2, 3, 4, 5];
+    /// let mut shuffled = values.clone();
+    /// 
+    /// rng.shuffle(&mut shuffled);
+    /// 
+    /// assert_ne!(&shuffled, &values);
+    /// ```
+    #[inline]
+    pub fn shuffle<T>(&self, slice: &mut [T]) {
+        (1..slice.len())
+            .rev()
+            .for_each(|index| slice.swap(index, self.usize(..=index)));
+    }
 }
 
 impl<S: State + Debug> Default for Rng<S> {
@@ -801,5 +823,18 @@ mod tests {
             actual_histogram, expected_histogram,
             "weighted samples should match in frequency to the expected histogram"
         );
+    }
+
+    #[test]
+    fn shuffle_smoke_testing() {
+        let rng = rng!(Default::default());
+
+        let mut values = [1, 2, 3, 4, 5, 6];
+
+        repeat_with(|| &rng)
+            .take(100)
+            .for_each(|r| r.shuffle(&mut values));
+
+        assert_eq!(&values, &[2, 5, 3, 1, 6, 4]);
     }
 }

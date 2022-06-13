@@ -27,6 +27,7 @@ pub trait State {
 pub struct CellState(Cell<u64>);
 
 impl State for CellState {
+    #[inline]
     fn with_seed(seed: u64) -> Self
     where
         Self: Sized,
@@ -34,10 +35,12 @@ impl State for CellState {
         Self(Cell::new(seed))
     }
 
+    #[inline]
     fn get(&self) -> u64 {
         self.0.get()
     }
 
+    #[inline]
     fn set(&self, value: u64) {
         self.0.set(value);
     }
@@ -78,6 +81,7 @@ pub struct AtomicState(AtomicU64);
 
 #[cfg(feature = "atomic")]
 impl State for AtomicState {
+    #[inline]
     fn with_seed(seed: u64) -> Self
     where
         Self: Sized,
@@ -85,10 +89,12 @@ impl State for AtomicState {
         Self(AtomicU64::new(seed))
     }
 
+    #[inline]
     fn get(&self) -> u64 {
         self.0.load(Ordering::Relaxed)
     }
 
+    #[inline]
     fn set(&self, value: u64) {
         self.0.store(value, Ordering::Relaxed);
     }

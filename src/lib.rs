@@ -92,23 +92,28 @@ macro_rules! range_unsigned {
 
             assert!(upper > lower, "Range should not be zero sized or invalid");
 
-            let upper = upper.saturating_sub(lower);
-            let mut value = self.$source();
-            let mut m = (upper as $bigger).wrapping_mul(value as $bigger);
-            if (m as $value) < upper {
-                let t = (!upper).wrapping_sub(1) % upper;
-                while (m as $value) < t {
-                    value = self.$source();
-                    m = (upper as $bigger).wrapping_mul(value as $bigger);
+            match (lower, upper) {
+                ($value::MIN, $value::MAX) => self.$source(),
+                (_, _) => {
+                    let upper = upper.saturating_sub(lower);
+                    let mut value = self.$source();
+                    let mut m = (upper as $bigger).wrapping_mul(value as $bigger);
+                    if (m as $value) < upper {
+                        let t = (!upper).wrapping_sub(1) % upper;
+                        while (m as $value) < t {
+                            value = self.$source();
+                            m = (upper as $bigger).wrapping_mul(value as $bigger);
+                        }
+                    }
+                    (m >> BITS) as $value + lower
                 }
             }
-            (m >> BITS) as $value + lower
         }
     };
 }
 
 macro_rules! range_signed {
-    ($value:tt, $unsigned:tt, $bigger:tt, $doc:tt) => {
+    ($value:tt, $unsigned:tt, $bigger:tt, $source:ident, $doc:tt) => {
         #[doc = $doc]
         ///
         /// Panics if the range is empty.
@@ -127,10 +132,15 @@ macro_rules! range_signed {
 
             assert!(upper > lower, "Range should not be zero sized or invalid");
 
-            let lower = lower.wrapping_sub($value::MIN) as $unsigned;
-            let upper = upper.wrapping_sub($value::MIN) as $unsigned;
-            self.$unsigned(lower..=upper)
-                .wrapping_add($value::MAX as $unsigned) as $value
+            match (lower, upper) {
+                ($value::MIN, $value::MAX) => self.$source(),
+                (_, _) => {
+                    let lower = lower.wrapping_sub($value::MIN) as $unsigned;
+                    let upper = upper.wrapping_sub($value::MIN) as $unsigned;
+                    self.$unsigned(lower..=upper)
+                        .wrapping_add($value::MAX as $unsigned) as $value
+                }
+            }
         }
     };
 }
@@ -326,24 +336,28 @@ impl<S: State + Debug> Rng<S> {
         i64,
         u64,
         u128,
+        gen_i64,
         "Returns a random `i64` within a given range bound."
     );
     range_signed!(
         i32,
         u32,
         u64,
+        gen_i32,
         "Returns a random `i32` within a given range bound."
     );
     range_signed!(
         i16,
         u16,
         u32,
+        gen_i16,
         "Returns a random `i16` within a given range bound."
     );
     range_signed!(
         i8,
         u8,
         u16,
+        gen_i8,
         "Returns a random `i8` within a given range bound."
     );
 
@@ -374,6 +388,7 @@ impl<S: State + Debug> Rng<S> {
         isize,
         usize,
         u32,
+        gen_isize,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "32")]
@@ -381,6 +396,7 @@ impl<S: State + Debug> Rng<S> {
         isize,
         usize,
         u64,
+        gen_isize,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "64")]
@@ -388,6 +404,7 @@ impl<S: State + Debug> Rng<S> {
         isize,
         usize,
         u128,
+        gen_isize,
         "Returns a random `isize` within a given range bound."
     );
 
@@ -450,7 +467,11 @@ impl<S: State + Debug> Rng<S> {
     pub fn chance(&self, rate: f64) -> bool {
         const SCALE: f64 = 2.0 * (1u64 << 63) as f64;
 
-        assert!((0.0..=1.0).contains(&rate));
+        assert!(
+            (0.0..=1.0).contains(&rate),
+            "rate value is not between 0.0 and 1.0, received {}",
+            rate
+        );
 
         let rate_int = (rate * SCALE) as u64;
 

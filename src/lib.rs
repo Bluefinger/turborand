@@ -38,6 +38,8 @@
 //! let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 //! ```
 #![warn(missing_docs, rust_2018_idioms)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, allow(unused_attributes))]
 
 use std::{
     cell::Cell,

@@ -23,6 +23,9 @@ jobs:
       - name: Install Rust
         # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
         run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@wasm-pack
+        if: startsWith(matrix.os, 'ubuntu')
       - name: Run cargo check
         run: cargo check --all --all-features --all-targets
         if: startsWith(matrix.rust, 'nightly')
@@ -30,3 +33,6 @@ jobs:
         if: startsWith(matrix.rust, 'nightly')
         run: cargo check -Z features=dev_dep
       - run: cargo test --all-features
+      - name: Test wasm
+        run: wasm-pack test --headless --chrome --firefox
+        if: startsWith(matrix.os, 'ubuntu')

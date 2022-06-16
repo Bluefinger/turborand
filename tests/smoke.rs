@@ -36,7 +36,7 @@ fn range_determinism_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = rng!();
 
     for _ in 0..1000 {
         let index = rng.usize(4..10);
@@ -82,7 +82,7 @@ fn range_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unbounded_range_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = rng!();
 
     for _ in 0..1000 {
         let index = rng.u8(..);
@@ -185,7 +185,7 @@ fn signed_range_spread_test() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn character_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = rng!();
 
     for _ in 0..1000 {
         let character = rng.alphabetic();
@@ -231,7 +231,7 @@ fn character_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn digit_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = rng!();
 
     for _ in 0..1000 {
         let digit = rng.digit(10);
@@ -286,7 +286,7 @@ fn digit_smoke_testing() {
 
 #[test]
 #[cfg(target_pointer_width = "64")]
-fn sample_smoke_testing() {
+fn sample_spread_testing() {
     let rng = rng!(Default::default());
 
     let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -307,7 +307,7 @@ fn sample_smoke_testing() {
 
 #[test]
 #[cfg(target_pointer_width = "64")]
-fn weighted_sample_smoke_testing() {
+fn weighted_sample_spread_testing() {
     let rng = rng!(Default::default());
 
     let samples: [u32; 5] = [0, 1, 2, 3, 4];

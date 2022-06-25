@@ -1,8 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use turborand::*;
 
-fn turborand_benchmark(c: &mut Criterion) {
+fn turborand_cell_benchmark(c: &mut Criterion) {
     c.bench_function("CellRng new", |b| b.iter(|| black_box(rng!())));
+    c.bench_function("CellRng clone", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.clone()))
+    });
     c.bench_function("CellRng gen_u128", |b| {
         let rand = rng!();
         b.iter(|| black_box(rand.gen_u128()));
@@ -35,13 +39,21 @@ fn turborand_benchmark(c: &mut Criterion) {
         let rand = rng!();
         b.iter(|| black_box(rand.isize(-10..10)));
     });
-    c.bench_function("CellRng u64 unbounded range", |b| {
+    c.bench_function("CellRng u128 bounded range", |b| {
         let rand = rng!();
-        b.iter(|| black_box(rand.u64(..)));
+        b.iter(|| black_box(rand.u128(..20)));
     });
-    c.bench_function("CellRng i32 unbounded range", |b| {
+    c.bench_function("CellRng i128 bounded range", |b| {
         let rand = rng!();
-        b.iter(|| black_box(rand.i32(..)));
+        b.iter(|| black_box(rand.i128(-20..20)));
+    });
+    c.bench_function("CellRng u64 bounded range", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.u64(..20)));
+    });
+    c.bench_function("CellRng i32 bounded range", |b| {
+        let rand = rng!();
+        b.iter(|| black_box(rand.i32(-20..20)));
     });
     c.bench_function("CellRng f64", |b| {
         let rand = rng!();
@@ -64,6 +76,10 @@ fn turborand_benchmark(c: &mut Criterion) {
 #[cfg(feature = "atomic")]
 fn turborand_atomic_benchmark(c: &mut Criterion) {
     c.bench_function("AtomicRng new", |b| b.iter(|| black_box(atomic_rng!())));
+    c.bench_function("AtomicRng clone", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.clone()))
+    });
     c.bench_function("AtomicRng gen_u128", |b| {
         let rand = atomic_rng!();
         b.iter(|| black_box(rand.gen_u128()));
@@ -96,13 +112,21 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
         let rand = atomic_rng!();
         b.iter(|| black_box(rand.isize(-10..10)));
     });
-    c.bench_function("AtomicRng u64 unbounded range", |b| {
+    c.bench_function("AtomicRng u128 bounded range", |b| {
         let rand = atomic_rng!();
-        b.iter(|| black_box(rand.u64(..)));
+        b.iter(|| black_box(rand.u128(..20)));
     });
-    c.bench_function("AtomicRng i32 unbounded range", |b| {
+    c.bench_function("AtomicRng i128 bounded range", |b| {
         let rand = atomic_rng!();
-        b.iter(|| black_box(rand.i32(..)));
+        b.iter(|| black_box(rand.i128(-20..20)));
+    });
+    c.bench_function("AtomicRng u64 bounded range", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.u64(..20)));
+    });
+    c.bench_function("AtomicRng i32 bounded range", |b| {
+        let rand = atomic_rng!();
+        b.iter(|| black_box(rand.i32(-20..20)));
     });
     c.bench_function("AtomicRng f64", |b| {
         let rand = atomic_rng!();
@@ -122,5 +146,5 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, turborand_benchmark, turborand_atomic_benchmark);
+criterion_group!(benches, turborand_cell_benchmark, turborand_atomic_benchmark);
 criterion_main!(benches);

@@ -72,77 +72,59 @@ use crate::{entropy::generate_entropy, source::WyRand};
 #[repr(transparent)]
 pub struct Rng<S: State + Debug>(WyRand<S>);
 
-macro_rules! range_unsigned {
-    ($value:tt, $bigger:tt, $source:ident, $doc:tt) => {
+macro_rules! range_int {
+    ($value:tt, $unsigned:tt, $source:ident, $modulus:ident, $doc:tt) => {
         #[doc = $doc]
         ///
         /// Panics if the range is empty.
         #[inline]
         pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
-            const BITS: $bigger = $value::BITS as $bigger;
-
             let lower = match bounds.start_bound() {
                 Bound::Included(lower) => *lower,
-                Bound::Excluded(lower) => lower.saturating_add(1),
+                Bound::Excluded(lower) => lower
+                    .checked_add(1)
+                    .unwrap_or_else(|| panic!("Lower bound value overflowed")),
                 Bound::Unbounded => $value::MIN,
             };
             let upper = match bounds.end_bound() {
-                Bound::Included(upper) => upper.saturating_add(1),
-                Bound::Excluded(upper) => *upper,
+                Bound::Included(upper) => *upper,
+                Bound::Excluded(upper) => upper
+                    .checked_sub(1)
+                    .unwrap_or_else(|| panic!("Upper bound value overflowed")),
                 Bound::Unbounded => $value::MAX,
             };
 
-            assert!(upper > lower, "Range should not be zero sized or invalid");
+            assert!(lower <= upper, "Range should not be zero sized or invalid");
 
             match (lower, upper) {
                 ($value::MIN, $value::MAX) => self.$source(),
                 (_, _) => {
-                    let upper = upper.saturating_sub(lower);
-                    let mut value = self.$source();
-                    let mut m = (upper as $bigger).wrapping_mul(value as $bigger);
-                    if (m as $value) < upper {
-                        let t = (!upper).wrapping_add(1) % upper;
-                        while (m as $value) < t {
-                            value = self.$source();
-                            m = (upper as $bigger).wrapping_mul(value as $bigger);
-                        }
-                    }
-                    (m >> BITS) as $value + lower
+                    let range = upper.wrapping_sub(lower).wrapping_add(1);
+                    lower.wrapping_add(self.$modulus(range as $unsigned) as $value)
                 }
             }
         }
     };
 }
 
-macro_rules! range_signed {
-    ($value:tt, $unsigned:tt, $bigger:tt, $source:ident, $doc:tt) => {
-        #[doc = $doc]
-        ///
-        /// Panics if the range is empty.
+macro_rules! modulus_int {
+    ($name:ident, $value:tt, $bigger:tt, $source:ident) => {
         #[inline]
-        pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
-            let lower = match bounds.start_bound() {
-                Bound::Included(lower) => lower.saturating_add(1),
-                Bound::Excluded(lower) => lower.saturating_add(2),
-                Bound::Unbounded => $value::MIN,
-            };
-            let upper = match bounds.end_bound() {
-                Bound::Included(upper) => upper.saturating_add(1),
-                Bound::Excluded(upper) => *upper,
-                Bound::Unbounded => $value::MAX,
-            };
+        fn $name(&self, range: $value) -> $value {
+            const BITS: $bigger = $value::BITS as $bigger;
 
-            assert!(upper > lower, "Range should not be zero sized or invalid");
-
-            match (lower, upper) {
-                ($value::MIN, $value::MAX) => self.$source(),
-                (_, _) => {
-                    let lower = lower.wrapping_sub($value::MIN) as $unsigned;
-                    let upper = upper.wrapping_sub($value::MIN) as $unsigned;
-                    self.$unsigned(lower..=upper)
-                        .wrapping_add($value::MAX as $unsigned) as $value
+            let mut generated = self.$source();
+            let mut high = (generated as $bigger).wrapping_mul(range as $bigger);
+            let mut low = high as $value;
+            if low < range {
+                let threshold = range.wrapping_neg() % range;
+                while low < threshold {
+                    generated = self.$source();
+                    high = (generated as $bigger).wrapping_mul(range as $bigger);
+                    low = high as $value;
                 }
             }
+            (high >> BITS) as $value
         }
     };
 }
@@ -321,104 +303,189 @@ impl<S: State + Debug> Rng<S> {
     #[cfg(not(target_pointer_width = "64"))]
     rand_int!(gen_isize, isize, "Returns a random `isize` value.");
 
-    range_unsigned!(
+    /// Returns a random `u128` within a given range bound.
+    pub fn u128(&self, bounds: impl RangeBounds<u128>) -> u128 {
+        let lower = match bounds.start_bound() {
+            Bound::Included(lower) => *lower,
+            Bound::Excluded(lower) => lower
+                .checked_add(1)
+                .unwrap_or_else(|| panic!("Lower bound value overflowed")),
+            Bound::Unbounded => u128::MIN,
+        };
+        let upper = match bounds.end_bound() {
+            Bound::Included(upper) => *upper,
+            Bound::Excluded(upper) => upper
+                .checked_sub(1)
+                .unwrap_or_else(|| panic!("Upper bound value overflowed")),
+            Bound::Unbounded => u128::MAX,
+        };
+
+        assert!(lower <= upper, "Range should not be zero sized or invalid");
+
+        match (lower, upper) {
+            (u128::MIN, u128::MAX) => self.gen_u128(),
+            (_, _) => {
+                let range = upper.wrapping_sub(lower).wrapping_add(1);
+                let mut value = self.gen_u128();
+                let mut high = multiply_high_u128(value, range);
+                let mut low = value.wrapping_mul(range);
+                if low < range {
+                    let t = range.wrapping_neg() % range;
+                    while low < t {
+                        value = self.gen_u128();
+                        high = multiply_high_u128(value, range);
+                        low = value.wrapping_mul(range);
+                    }
+                }
+                lower.wrapping_add(high)
+            }
+        }
+    }
+
+    /// Returns a random `i128` within a given range bound.
+    pub fn i128(&self, bounds: impl RangeBounds<i128>) -> i128 {
+        let lower = match bounds.start_bound() {
+            Bound::Included(lower) => *lower,
+            Bound::Excluded(lower) => lower
+                .checked_add(1)
+                .unwrap_or_else(|| panic!("Lower bound value overflowed")),
+            Bound::Unbounded => i128::MIN,
+        };
+        let upper = match bounds.end_bound() {
+            Bound::Included(upper) => *upper,
+            Bound::Excluded(upper) => upper
+                .checked_sub(1)
+                .unwrap_or_else(|| panic!("Upper bound value overflowed")),
+            Bound::Unbounded => i128::MAX,
+        };
+
+        assert!(upper >= lower, "Range should not be zero sized or invalid");
+
+        match (lower, upper) {
+            (i128::MIN, i128::MAX) => self.gen_i128(),
+            (_, _) => {
+                let range = upper.wrapping_sub(lower).wrapping_add(1) as u128;
+                let mut value = self.gen_u128();
+                let mut high = multiply_high_u128(value, range);
+                let mut low = value.wrapping_mul(range);
+                if low < range {
+                    let t = range.wrapping_neg() % range;
+                    while low < t {
+                        value = self.gen_u128();
+                        high = multiply_high_u128(value, range);
+                        low = value.wrapping_mul(range);
+                    }
+                }
+                lower.wrapping_add(high as i128)
+            }
+        }
+    }
+
+    range_int!(
         u64,
-        u128,
+        u64,
         gen_u64,
+        mod_u64,
         "Returns a random `u64` within a given range bound."
     );
-    range_unsigned!(
+    range_int!(
         u32,
-        u64,
+        u32,
         gen_u32,
+        mod_u32,
         "Returns a random `u32` within a given range bound."
     );
-    range_unsigned!(
+    range_int!(
         u16,
-        u32,
+        u16,
         gen_u16,
+        mod_u16,
         "Returns a random `u16` within a given range bound."
     );
-    range_unsigned!(
+    range_int!(
         u8,
-        u16,
+        u8,
         gen_u8,
+        mod_u8,
         "Returns a random `u8` within a given range bound."
     );
 
-    range_signed!(
+    range_int!(
         i64,
         u64,
-        u128,
         gen_i64,
+        mod_u64,
         "Returns a random `i64` within a given range bound."
     );
-    range_signed!(
+    range_int!(
         i32,
         u32,
-        u64,
         gen_i32,
+        mod_u32,
         "Returns a random `i32` within a given range bound."
     );
-    range_signed!(
+    range_int!(
         i16,
         u16,
-        u32,
         gen_i16,
+        mod_u16,
         "Returns a random `i16` within a given range bound."
     );
-    range_signed!(
+    range_int!(
         i8,
         u8,
-        u16,
         gen_i8,
+        mod_u8,
         "Returns a random `i8` within a given range bound."
     );
 
     #[cfg(target_pointer_width = "16")]
-    range_unsigned!(
+    range_int!(
         usize,
-        u32,
+        u16,
         gen_usize,
+        mod_u16,
         "Returns a random `usize` within a given range bound."
     );
     #[cfg(target_pointer_width = "32")]
-    range_unsigned!(
+    range_int!(
         usize,
-        u64,
+        u32,
         gen_usize,
+        mod_u32,
         "Returns a random `usize` within a given range bound."
     );
     #[cfg(target_pointer_width = "64")]
-    range_unsigned!(
+    range_int!(
         usize,
-        u128,
+        u64,
         gen_usize,
+        mod_u64,
         "Returns a random `usize` within a given range bound."
     );
 
     #[cfg(target_pointer_width = "16")]
-    range_signed!(
+    range_int!(
         isize,
-        usize,
-        u32,
+        u16,
         gen_isize,
+        mod_u16,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "32")]
-    range_signed!(
+    range_int!(
         isize,
-        usize,
-        u64,
+        u32,
         gen_isize,
+        mod_u32,
         "Returns a random `isize` within a given range bound."
     );
     #[cfg(target_pointer_width = "64")]
-    range_signed!(
+    range_int!(
         isize,
-        usize,
-        u128,
+        u64,
         gen_isize,
+        mod_u64,
         "Returns a random `isize` within a given range bound."
     );
 
@@ -638,6 +705,11 @@ impl<S: State + Debug> Rng<S> {
             _ => panic!("radix cannot be greater than 36"),
         }
     }
+
+    modulus_int!(mod_u64, u64, u128, gen_u64);
+    modulus_int!(mod_u32, u32, u64, gen_u32);
+    modulus_int!(mod_u16, u16, u32, gen_u16);
+    modulus_int!(mod_u8, u8, u16, gen_u8);
 }
 
 impl<S: State + Debug> Default for Rng<S> {
@@ -691,6 +763,25 @@ impl<S: State + Debug> Debug for Rng<S> {
 
 thread_local! {
     static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(generate_entropy())));
+}
+
+/// Computes `(a * b) >> 128`. Adapted from: https://stackoverflow.com/a/28904636
+#[inline]
+fn multiply_high_u128(a: u128, b: u128) -> u128 {
+    let a_low = a as u64 as u128;
+    let a_high = (a >> 64) as u64 as u128;
+
+    let b_low = b as u64 as u128;
+    let b_high = (b >> 64) as u64 as u128;
+
+    let carry = (a_low * b_low) >> 64;
+
+    let a_high_x_b_low = a_high * b_low;
+    let a_low_x_b_high = a_low * b_high;
+
+    let carry = (a_high_x_b_low as u64 as u128 + a_low_x_b_high as u64 as u128 + carry) >> 64;
+
+    a_high * b_high + (a_high_x_b_low >> 64) + (a_low_x_b_high >> 64) + carry
 }
 
 #[cfg(test)]

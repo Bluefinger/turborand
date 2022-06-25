@@ -77,6 +77,39 @@ fn range_smoke_testing() {
             index
         );
     }
+
+    for _ in 0..1000 {
+        let value = rng.u128(6..61);
+
+        assert!(
+            (6..61).contains(&value),
+            "Must generate a number within 6 and 61, received: {}",
+            value
+        );
+    }
+
+    for _ in 0..1000 {
+        let value = rng.i128(-20..20);
+
+        assert!(
+            (-20..20).contains(&value),
+            "Must generate a number within -20 and 20, received: {}",
+            value
+        );
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn small_range_smoke_testing() {
+    let rng = rng!(Default::default());
+
+    let val1 = rng.u64(0..1);
+    let val2 = rng.i64(0..1);
+    let val3 = rng.u64(0..=1);
+    let val4 = rng.i64(-1..=0);
+
+    assert_eq!((val1, val2, val3, val4), (0, 0, 1, -1));
 }
 
 #[test]

@@ -340,6 +340,27 @@ fn sample_spread_testing() {
 
 #[test]
 #[cfg(target_pointer_width = "64")]
+fn sample_multiple_spread_testing() {
+    let rng = rng!(Default::default());
+
+    let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
+    let mut sampled = [0; 8];
+
+    for _ in 0..1000 {
+        let selected = rng.sample_multiple(&indexes, 3);
+
+        selected.into_iter().for_each(|sample| sampled[*sample] += 1);
+    }
+
+    assert_eq!(
+        &sampled,
+        &[399, 369, 391, 377, 373, 384, 345, 362],
+        "samples will occur across all array items at statistically equal chance"
+    );
+}
+
+#[test]
+#[cfg(target_pointer_width = "64")]
 fn weighted_sample_spread_testing() {
     let rng = rng!(Default::default());
 

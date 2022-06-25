@@ -586,6 +586,29 @@ impl<S: State + Debug> Rng<S> {
         }
     }
 
+    /// Samples multiple unique items from a slice of values.
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// 
+    /// let rng = rng!(Default::default());
+    /// 
+    /// let values = [1, 2, 3, 4, 5, 6];
+    /// 
+    /// assert_eq!(rng.sample_multiple(&values, 2), vec![&6, &4]);
+    /// ```
+    #[inline]
+    pub fn sample_multiple<'a, T>(&self, list: &'a [T], amount: usize) -> Vec<&'a T> {
+        let draining = list.len().min(amount);
+
+        let mut shuffled: Vec<&'a T> = list.iter().collect();
+
+        self.shuffle(&mut shuffled);
+
+        shuffled.drain(0..draining).collect()
+    }
+
     /// [Stochastic Acceptance](https://arxiv.org/abs/1109.3627) implementation of Roulette Wheel
     /// weighted selection. Uses a closure to return a `rate` value for each randomly sampled item
     /// to decide whether to return it or not. The returned `f64` value must be between `0.0` and `1.0`.

@@ -44,6 +44,7 @@
 use std::{
     cell::Cell,
     collections::hash_map::DefaultHasher,
+    convert::{TryFrom, TryInto},
     fmt::Debug,
     hash::{Hash, Hasher},
     iter::repeat_with,
@@ -587,15 +588,15 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Samples multiple unique items from a slice of values.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use turborand::*;
-    /// 
+    ///
     /// let rng = rng!(Default::default());
-    /// 
+    ///
     /// let values = [1, 2, 3, 4, 5, 6];
-    /// 
+    ///
     /// assert_eq!(rng.sample_multiple(&values, 2), vec![&6, &4]);
     /// ```
     #[inline]
@@ -727,6 +728,74 @@ impl<S: State + Debug> Rng<S> {
             }
             _ => panic!("radix cannot be greater than 36"),
         }
+    }
+
+    /// Generates a random `char` in the given range.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// 
+    /// let rand = rng!(Default::default());
+    /// 
+    /// let character = rand.char('a'..'Ç');
+    /// 
+    /// assert_eq!(character, '»');
+    /// ```
+    /// # Panics
+    /// 
+    /// Panics if the range is empty.
+    pub fn char(&self, bounds: impl RangeBounds<char>) -> char {
+        const SURROGATE_START: u32 = 0xd800u32;
+        const SURROGATE_LENGTH: u32 = 0x800u32;
+
+        let lower = match bounds.start_bound() {
+            Bound::Unbounded => 0u8 as char,
+            Bound::Included(&x) => x,
+            Bound::Excluded(&x) => {
+                let scalar = if x as u32 == SURROGATE_START - 1 {
+                    SURROGATE_START + SURROGATE_LENGTH
+                } else {
+                    x as u32 + 1
+                };
+                char::try_from(scalar)
+                    .unwrap_or_else(|_| panic!("Invalid exclusive lower character bound"))
+            }
+        };
+
+        let upper = match bounds.end_bound() {
+            Bound::Unbounded => char::MAX,
+            Bound::Included(&x) => x,
+            Bound::Excluded(&x) => {
+                let scalar = if x as u32 == SURROGATE_START + SURROGATE_LENGTH {
+                    SURROGATE_START - 1
+                } else {
+                    (x as u32).wrapping_sub(1)
+                };
+                char::try_from(scalar)
+                    .unwrap_or_else(|_| panic!("Invalid exclusive upper character bound"))
+            }
+        };
+
+        assert!(upper >= lower, "Invalid character range");
+
+        let lower_scalar = lower as u32;
+        let upper_scalar = upper as u32;
+
+        let gap = if lower_scalar < SURROGATE_START && upper_scalar >= SURROGATE_START {
+            SURROGATE_LENGTH
+        } else {
+            0
+        };
+
+        let range = upper_scalar - lower_scalar - gap;
+        let mut val = self.u32(0..=range) + lower_scalar;
+
+        if val >= SURROGATE_START {
+            val += gap;
+        }
+
+        val.try_into().unwrap()
     }
 
     modulus_int!(mod_u64, u64, u128, gen_u64);

@@ -304,6 +304,31 @@ impl<S: State + Debug> Rng<S> {
     #[cfg(not(target_pointer_width = "64"))]
     rand_int!(gen_isize, isize, "Returns a random `isize` value.");
 
+    /// Fills a mutable buffer with random bytes.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rand = rng!(Default::default());
+    ///
+    /// let mut bytes = [0u8; 10];
+    ///
+    /// rand.fill_bytes(bytes.as_mut_slice());
+    ///
+    /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
+    /// ```
+    pub fn fill_bytes(&self, mut buffer: &mut [u8]) {
+        let mut length: usize = buffer.len();
+        while length > 0 {
+            let output = self.0.rand();
+            let fill = output.len().min(length);
+            buffer[..fill].copy_from_slice(&output[..fill]);
+            buffer = &mut buffer[fill..];
+            length -= fill;
+        }
+    }
+
     /// Returns a random `u128` within a given range bound.
     pub fn u128(&self, bounds: impl RangeBounds<u128>) -> u128 {
         let lower = match bounds.start_bound() {
@@ -735,15 +760,15 @@ impl<S: State + Debug> Rng<S> {
     /// # Example
     /// ```
     /// use turborand::*;
-    /// 
+    ///
     /// let rand = rng!(Default::default());
-    /// 
+    ///
     /// let character = rand.char('a'..'Ç');
-    /// 
+    ///
     /// assert_eq!(character, '»');
     /// ```
     /// # Panics
-    /// 
+    ///
     /// Panics if the range is empty.
     pub fn char(&self, bounds: impl RangeBounds<char>) -> char {
         const SURROGATE_START: u32 = 0xd800u32;

@@ -318,6 +318,35 @@ fn digit_smoke_testing() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_bytes_smoke_testing() {
+    let mut bytes = [0u8; 12];
+    let rng = rng!(Default::default());
+
+    for _ in 0..1000 {
+        rng.fill_bytes(bytes.as_mut_slice());
+    }
+
+    assert_eq!(
+        &bytes,
+        &[8, 211, 110, 129, 82, 24, 169, 243, 239, 156, 64, 162],
+        "array bytes should match expected output"
+    );
+
+    let mut bytes = vec![0_u8; 12];
+
+    for _ in 0..1000 {
+        rng.fill_bytes(bytes.as_mut_slice());
+    }
+
+    assert_eq!(
+        &bytes,
+        &[231, 75, 181, 137, 136, 142, 198, 200, 185, 42, 12, 175],
+        "vec bytes should match expected output"
+    );
+}
+
+#[test]
 #[cfg(target_pointer_width = "64")]
 fn sample_spread_testing() {
     let rng = rng!(Default::default());
@@ -349,7 +378,9 @@ fn sample_multiple_spread_testing() {
     for _ in 0..1000 {
         let selected = rng.sample_multiple(&indexes, 3);
 
-        selected.into_iter().for_each(|sample| sampled[*sample] += 1);
+        selected
+            .into_iter()
+            .for_each(|sample| sampled[*sample] += 1);
     }
 
     assert_eq!(

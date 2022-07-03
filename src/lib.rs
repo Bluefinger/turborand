@@ -318,6 +318,7 @@ impl<S: State + Debug> Rng<S> {
     ///
     /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
     /// ```
+    #[inline]
     pub fn fill_bytes(&self, mut buffer: &mut [u8]) {
         let mut length: usize = buffer.len();
         while length > 0 {
@@ -330,6 +331,7 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Returns a random `u128` within a given range bound.
+    #[inline]
     pub fn u128(&self, bounds: impl RangeBounds<u128>) -> u128 {
         let lower = match bounds.start_bound() {
             Bound::Included(lower) => *lower,
@@ -369,6 +371,7 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Returns a random `i128` within a given range bound.
+    #[inline]
     pub fn i128(&self, bounds: impl RangeBounds<i128>) -> i128 {
         let lower = match bounds.start_bound() {
             Bound::Included(lower) => *lower,
@@ -385,7 +388,7 @@ impl<S: State + Debug> Rng<S> {
             Bound::Unbounded => i128::MAX,
         };
 
-        assert!(upper >= lower, "Range should not be zero sized or invalid");
+        assert!(lower <= upper, "Range should not be zero sized or invalid");
 
         match (lower, upper) {
             (i128::MIN, i128::MAX) => self.gen_i128(),

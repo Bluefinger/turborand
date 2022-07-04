@@ -137,19 +137,8 @@ macro_rules! rand_int {
         pub fn $func(&self) -> $int {
             const SIZE: usize = core::mem::size_of::<$int>();
             let mut bytes = [0u8; SIZE];
-            let random = self.0.rand();
-            bytes.copy_from_slice(&random[..SIZE]);
+            self.fill_bytes(&mut bytes);
             <$int>::from_le_bytes(bytes)
-        }
-    };
-}
-
-macro_rules! rand_int_from_bytes {
-    ($func:ident, $int:ty, $doc:tt) => {
-        #[doc = $doc]
-        #[inline]
-        pub fn $func(&self) -> $int {
-            <$int>::from_le_bytes(self.0.rand())
         }
     };
 }
@@ -170,6 +159,8 @@ macro_rules! rand_characters {
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
+///
+/// # Example
 ///
 /// ```
 /// use turborand::*;
@@ -203,6 +194,8 @@ macro_rules! rng {
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
+///
+/// # Example
 ///
 /// ```
 /// use turborand::*;
@@ -263,30 +256,10 @@ impl<S: State + Debug> Rng<S> {
         self.0.reseed(seed << 1 | 1);
     }
 
-    /// Returns a random `u128` value.
-    #[inline]
-    pub fn gen_u128(&self) -> u128 {
-        let low = self.0.rand();
-        let high = self.0.rand();
-        let mut bytes = [0u8; 16];
-        bytes[..8].copy_from_slice(&low);
-        bytes[8..].copy_from_slice(&high);
-        u128::from_le_bytes(bytes)
-    }
-
-    /// Returns a random `i128` value.
-    #[inline]
-    pub fn gen_i128(&self) -> i128 {
-        let low = self.0.rand();
-        let high = self.0.rand();
-        let mut bytes = [0u8; 16];
-        bytes[..8].copy_from_slice(&low);
-        bytes[8..].copy_from_slice(&high);
-        i128::from_le_bytes(bytes)
-    }
-
-    rand_int_from_bytes!(gen_u64, u64, "Returns a random `u64` value.");
-    rand_int_from_bytes!(gen_i64, i64, "Returns a random `i64` value.");
+    rand_int!(gen_u128, u128, "Returns a random `u128` value.");
+    rand_int!(gen_i128, i128, "Returns a random `i128` value.");
+    rand_int!(gen_u64, u64, "Returns a random `u64` value.");
+    rand_int!(gen_i64, i64, "Returns a random `i64` value.");
     rand_int!(gen_u32, u32, "Returns a random `u32` value.");
     rand_int!(gen_i32, i32, "Returns a random `i32` value.");
     rand_int!(gen_u16, u16, "Returns a random `u16` value.");
@@ -295,12 +268,12 @@ impl<S: State + Debug> Rng<S> {
     rand_int!(gen_i8, i8, "Returns a random `i8` value.");
 
     #[cfg(target_pointer_width = "64")]
-    rand_int_from_bytes!(gen_usize, usize, "Returns a random `usize` value.");
+    rand_int!(gen_usize, usize, "Returns a random `usize` value.");
     #[cfg(not(target_pointer_width = "64"))]
     rand_int!(gen_usize, usize, "Returns a random `usize` value.");
 
     #[cfg(target_pointer_width = "64")]
-    rand_int_from_bytes!(gen_isize, isize, "Returns a random `isize` value.");
+    rand_int!(gen_isize, isize, "Returns a random `isize` value.");
     #[cfg(not(target_pointer_width = "64"))]
     rand_int!(gen_isize, isize, "Returns a random `isize` value.");
 
@@ -314,12 +287,13 @@ impl<S: State + Debug> Rng<S> {
     ///
     /// let mut bytes = [0u8; 10];
     ///
-    /// rand.fill_bytes(bytes.as_mut_slice());
+    /// rand.fill_bytes(&mut bytes);
     ///
     /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
     /// ```
     #[inline]
-    pub fn fill_bytes(&self, mut buffer: &mut [u8]) {
+    pub fn fill_bytes<B: AsMut<[u8]>>(&self, mut buffer: B) {
+        let mut buffer = buffer.as_mut();
         let mut length: usize = buffer.len();
         while length > 0 {
             let output = self.0.rand();

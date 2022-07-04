@@ -324,7 +324,7 @@ fn fill_bytes_smoke_testing() {
     let rng = rng!(Default::default());
 
     for _ in 0..1000 {
-        rng.fill_bytes(bytes.as_mut_slice());
+        rng.fill_bytes(&mut bytes);
     }
 
     assert_eq!(

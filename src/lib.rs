@@ -773,6 +773,7 @@ impl<S: State + Debug> Rng<S> {
     /// # Panics
     ///
     /// Panics if the range is empty.
+    #[inline]
     pub fn char(&self, bounds: impl RangeBounds<char>) -> char {
         const SURROGATE_START: u32 = 0xd800u32;
         const SURROGATE_LENGTH: u32 = 0x800u32;
@@ -845,6 +846,7 @@ impl<S: State + Debug> Default for Rng<S> {
     ///
     /// assert_ne!(rng1.u64(..), rng2.u64(..));
     /// ```
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

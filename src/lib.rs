@@ -61,6 +61,9 @@ use std::time::Instant;
 #[cfg(feature = "atomic")]
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[macro_use]
+mod methods;
+
 mod entropy;
 mod internal;
 mod source;
@@ -72,88 +75,6 @@ use crate::{entropy::generate_entropy, source::WyRand};
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Rng<S: State + Debug>(WyRand<S>);
-
-macro_rules! range_int {
-    ($value:tt, $unsigned:tt, $source:ident, $modulus:ident, $doc:tt) => {
-        #[doc = $doc]
-        ///
-        /// Panics if the range is empty.
-        #[inline]
-        pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
-            let lower = match bounds.start_bound() {
-                Bound::Included(lower) => *lower,
-                Bound::Excluded(lower) => lower
-                    .checked_add(1)
-                    .unwrap_or_else(|| panic!("Lower bound value overflowed")),
-                Bound::Unbounded => $value::MIN,
-            };
-            let upper = match bounds.end_bound() {
-                Bound::Included(upper) => *upper,
-                Bound::Excluded(upper) => upper
-                    .checked_sub(1)
-                    .unwrap_or_else(|| panic!("Upper bound value overflowed")),
-                Bound::Unbounded => $value::MAX,
-            };
-
-            assert!(lower <= upper, "Range should not be zero sized or invalid");
-
-            match (lower, upper) {
-                ($value::MIN, $value::MAX) => self.$source(),
-                (_, _) => {
-                    let range = upper.wrapping_sub(lower).wrapping_add(1);
-                    lower.wrapping_add(self.$modulus(range as $unsigned) as $value)
-                }
-            }
-        }
-    };
-}
-
-macro_rules! modulus_int {
-    ($name:ident, $value:tt, $bigger:tt, $source:ident) => {
-        #[inline]
-        fn $name(&self, range: $value) -> $value {
-            const BITS: $bigger = $value::BITS as $bigger;
-
-            let mut generated = self.$source();
-            let mut high = (generated as $bigger).wrapping_mul(range as $bigger);
-            let mut low = high as $value;
-            if low < range {
-                let threshold = range.wrapping_neg() % range;
-                while low < threshold {
-                    generated = self.$source();
-                    high = (generated as $bigger).wrapping_mul(range as $bigger);
-                    low = high as $value;
-                }
-            }
-            (high >> BITS) as $value
-        }
-    };
-}
-
-macro_rules! rand_int {
-    ($func:ident, $int:ty, $doc:tt) => {
-        #[doc = $doc]
-        #[inline]
-        pub fn $func(&self) -> $int {
-            const SIZE: usize = core::mem::size_of::<$int>();
-            let mut bytes = [0u8; SIZE];
-            self.fill_bytes(&mut bytes);
-            <$int>::from_le_bytes(bytes)
-        }
-    };
-}
-
-macro_rules! rand_characters {
-    ($func:ident, $chars:expr, $doc:tt) => {
-        #[doc = $doc]
-        #[inline]
-        pub fn $func(&self) -> char {
-            const CHARS: &[u8] = $chars;
-
-            self.sample(CHARS).map(|&value| value as char).unwrap()
-        }
-    };
-}
 
 /// Initialises an `Rng` instance with a `CellState`. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
@@ -858,7 +779,9 @@ impl<S: State + Debug> Debug for Rng<S> {
 }
 
 thread_local! {
-    static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(generate_entropy())));
+    static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(
+        u64::from_be_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
+    )));
 }
 
 /// Computes `(a * b) >> 128`. Adapted from: https://stackoverflow.com/a/28904636

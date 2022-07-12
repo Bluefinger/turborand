@@ -37,6 +37,13 @@
 //!
 //! let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 //! ```
+//! 
+//! # Features
+//! 
+//! * `atomic` - Enables [`AtomicState`] variants & `atomic_rng!()` macros, so
+//!   to provide a thread-safe variation of [`Rng`].
+//! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
+//!   so to allow for compatibility with `rand` ecosystem of crates
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
@@ -60,6 +67,9 @@ use std::time::Instant;
 
 #[cfg(feature = "atomic")]
 use std::sync::atomic::{AtomicU64, Ordering};
+
+#[cfg(feature = "rand")]
+use rand_core::{RngCore, SeedableRng};
 
 #[macro_use]
 mod methods;
@@ -778,6 +788,95 @@ impl<S: State + Debug> Debug for Rng<S> {
     }
 }
 
+/// A wrapper struct around `Rng<CellState>` to allow implementing
+/// `RngCore` and `SeedableRng` traits in a compatible manner.
+#[cfg(feature = "rand")]
+#[derive(PartialEq, Eq)]
+#[repr(transparent)]
+pub struct RandCompat(Rng<CellState>);
+
+#[cfg(feature = "rand")]
+impl RandCompat {
+    /// Creates a new `RandCompat` with a randomised seed.
+    #[inline]
+    #[must_use]
+    pub fn new() -> Self {
+        Self(Rng::default())
+    }
+}
+
+#[cfg(feature = "rand")]
+impl Default for RandCompat {
+    /// Initialises a default instance of `RandCompat`. Warning, the default is
+    /// seeded with a randomly generated state, so this is **not** deterministic.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// use rand_core::RngCore;
+    ///
+    /// let mut rng1 = RandCompat::default();
+    /// let mut rng2 = RandCompat::default();
+    ///
+    /// assert_ne!(rng1.next_u64(), rng2.next_u64());
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "rand")]
+impl RngCore for RandCompat {
+    #[inline]
+    fn next_u32(&mut self) -> u32 {
+        self.0.gen_u32()
+    }
+
+    #[inline]
+    fn next_u64(&mut self) -> u64 {
+        self.0.gen_u64()
+    }
+
+    #[inline]
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.0.fill_bytes(dest);
+    }
+
+    #[inline]
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        self.0.fill_bytes(dest);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "rand")]
+impl SeedableRng for RandCompat {
+    type Seed = [u8; core::mem::size_of::<u64>()];
+
+    #[inline]
+    #[must_use]
+    fn from_seed(seed: Self::Seed) -> Self {
+        Self(Rng::with_seed(u64::from_be_bytes(seed)))
+    }
+}
+
+#[cfg(feature = "rand")]
+impl From<Rng<CellState>> for RandCompat {
+    #[inline]
+    fn from(rng: Rng<CellState>) -> Self {
+        Self(rng)
+    }
+}
+
+#[cfg(feature = "rand")]
+impl From<RandCompat> for Rng<CellState> {
+    #[inline]
+    fn from(rand: RandCompat) -> Self {
+        rand.0
+    }
+}
+
 thread_local! {
     static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(
         u64::from_ne_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
@@ -812,5 +911,21 @@ mod tests {
         let rng = rng!(Default::default());
 
         assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn rand_compatibility() {
+        fn get_rand_num<R: RngCore>(rng: &mut R) -> u64 {
+            rng.next_u64()
+        }
+
+        let rng = rng!(Default::default());
+
+        let mut rand: RandCompat = rng.into();
+
+        let result = get_rand_num(&mut rand);
+
+        assert_eq!(result, 14839104130206199084, "Should receive expect random u64 output, got {} instead", result);
     }
 }

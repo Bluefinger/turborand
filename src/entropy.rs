@@ -9,9 +9,9 @@ pub(crate) fn generate_entropy<const SIZE: usize>() -> [u8; SIZE] {
     thread::current().id().hash(&mut hasher);
 
     let mut bytes = [0u8; SIZE];
+    let mut length = bytes.len();
 
     let mut buffer = bytes.as_mut();
-    let mut length = buffer.len();
 
     while length > 0 {
         length.hash(&mut hasher);
@@ -48,11 +48,11 @@ mod tests {
 
         let mut part1 = [0u8; 8];
         part1.copy_from_slice(&result[..split]);
-        let part1 = u64::from_be_bytes(part1);
+        let part1 = u64::from_ne_bytes(part1);
 
         let mut part2 = [0u8; 8];
         part2.copy_from_slice(&result[split..]);
-        let part2 = u64::from_be_bytes(part2);
+        let part2 = u64::from_ne_bytes(part2);
 
         assert_ne!(
             part1, part2,

@@ -780,7 +780,7 @@ impl<S: State + Debug> Debug for Rng<S> {
 
 thread_local! {
     static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(
-        u64::from_be_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
+        u64::from_ne_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
     )));
 }
 

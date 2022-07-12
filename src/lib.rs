@@ -37,6 +37,13 @@
 //!
 //! let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 //! ```
+//! 
+//! # Features
+//! 
+//! * `atomic` - Enables [`AtomicState`] variants & `atomic_rng!()` macros, so
+//!   to provide a thread-safe variation of [`Rng`].
+//! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
+//!   so to allow for compatibility with `rand` ecosystem of crates
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]

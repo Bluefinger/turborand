@@ -2,21 +2,19 @@ macro_rules! range_int {
     ($value:tt, $unsigned:tt, $source:ident, $modulus:ident, $doc:tt) => {
         #[doc = $doc]
         ///
-        /// Panics if the range is empty.
+        /// # Panics
+        /// 
+        /// Panics if the range is empty or invalid.
         #[inline]
         pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
             let lower = match bounds.start_bound() {
                 Bound::Included(lower) => *lower,
-                Bound::Excluded(lower) => lower
-                    .checked_add(1)
-                    .unwrap_or_else(|| panic!("Lower bound value overflowed")),
+                Bound::Excluded(lower) => lower.saturating_add(1),
                 Bound::Unbounded => $value::MIN,
             };
             let upper = match bounds.end_bound() {
                 Bound::Included(upper) => *upper,
-                Bound::Excluded(upper) => upper
-                    .checked_sub(1)
-                    .unwrap_or_else(|| panic!("Upper bound value overflowed")),
+                Bound::Excluded(upper) => upper.saturating_sub(1),
                 Bound::Unbounded => $value::MAX,
             };
 

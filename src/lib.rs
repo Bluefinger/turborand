@@ -37,10 +37,10 @@
 //!
 //! let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 //! ```
-//! 
+//!
 //! # Features
-//! 
-//! * `atomic` - Enables [`AtomicState`] variants & `atomic_rng!()` macros, so
+//!
+//! * `atomic` - Enables [`AtomicState`] variants & [`atomic_rng`] macros, so
 //!   to provide a thread-safe variation of [`Rng`].
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
@@ -236,20 +236,20 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Returns a random `u128` within a given range bound.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the range is empty or invalid.
     #[inline]
     pub fn u128(&self, bounds: impl RangeBounds<u128>) -> u128 {
         let lower = match bounds.start_bound() {
             Bound::Included(lower) => *lower,
-            Bound::Excluded(lower) => lower
-                .checked_add(1)
-                .unwrap_or_else(|| panic!("Lower bound value overflowed")),
+            Bound::Excluded(lower) => lower.saturating_add(1),
             Bound::Unbounded => u128::MIN,
         };
         let upper = match bounds.end_bound() {
             Bound::Included(upper) => *upper,
-            Bound::Excluded(upper) => upper
-                .checked_sub(1)
-                .unwrap_or_else(|| panic!("Upper bound value overflowed")),
+            Bound::Excluded(upper) => upper.saturating_sub(1),
             Bound::Unbounded => u128::MAX,
         };
 
@@ -276,20 +276,20 @@ impl<S: State + Debug> Rng<S> {
     }
 
     /// Returns a random `i128` within a given range bound.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the range is empty or invalid.
     #[inline]
     pub fn i128(&self, bounds: impl RangeBounds<i128>) -> i128 {
         let lower = match bounds.start_bound() {
             Bound::Included(lower) => *lower,
-            Bound::Excluded(lower) => lower
-                .checked_add(1)
-                .unwrap_or_else(|| panic!("Lower bound value overflowed")),
+            Bound::Excluded(lower) => lower.saturating_add(1),
             Bound::Unbounded => i128::MIN,
         };
         let upper = match bounds.end_bound() {
             Bound::Included(upper) => *upper,
-            Bound::Excluded(upper) => upper
-                .checked_sub(1)
-                .unwrap_or_else(|| panic!("Upper bound value overflowed")),
+            Bound::Excluded(upper) => upper.saturating_sub(1),
             Bound::Unbounded => i128::MAX,
         };
 
@@ -926,6 +926,10 @@ mod tests {
 
         let result = get_rand_num(&mut rand);
 
-        assert_eq!(result, 14_839_104_130_206_199_084, "Should receive expect random u64 output, got {} instead", result);
+        assert_eq!(
+            result, 14_839_104_130_206_199_084,
+            "Should receive expect random u64 output, got {} instead",
+            result
+        );
     }
 }

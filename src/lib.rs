@@ -44,6 +44,7 @@
 //!   to provide a thread-safe variation of [`Rng`].
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
+//! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`].
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
@@ -71,6 +72,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(feature = "rand")]
 use rand_core::{RngCore, SeedableRng};
 
+#[cfg(feature = "serialize")]
+use serde::{Deserialize, Serialize};
+
 #[macro_use]
 mod methods;
 
@@ -83,6 +87,7 @@ use crate::{entropy::generate_entropy, source::WyRand};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
 #[derive(PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Rng<S: State + Debug>(WyRand<S>);
 
@@ -931,5 +936,15 @@ mod tests {
             "Should receive expect random u64 output, got {} instead",
             result
         );
+    }
+
+    #[cfg(feature = "serialize")]
+    #[test]
+    fn serialize_rng() {
+        let rng = rng!(12345);
+
+        let json = serde_json::to_string(&rng).unwrap();
+
+        assert_eq!(json, "{\"state\":24691}", "Serialized output not as expected");
     }
 }

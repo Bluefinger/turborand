@@ -11,7 +11,7 @@ pub(crate) struct WyRand<S: Debug + State = CellState> {
 }
 
 impl<S: State + Debug> WyRand<S> {
-    /// Creates a new RNG source with seeded value.
+    /// Creates a new [`WyRand`] source with seeded value.
     #[inline]
     pub(crate) fn with_seed(seed: u64) -> Self {
         Self {
@@ -19,7 +19,7 @@ impl<S: State + Debug> WyRand<S> {
         }
     }
 
-    /// Reseeds an existing RNG source with a new seed value.
+    /// Reseeds an existing [`WyRand`] source with a new seed value.
     #[inline]
     pub(crate) fn reseed(&self, seed: u64) {
         self.state.set(seed);
@@ -37,7 +37,7 @@ impl<S: State + Debug> WyRand<S> {
 }
 
 impl<S: State + Debug> Clone for WyRand<S> {
-    /// Deterministically clones the RNG source.
+    /// Deterministically clones the [`WyRand`] source.
     fn clone(&self) -> Self {
         Self {
             state: S::with_seed(u64::from_le_bytes(self.rand())),

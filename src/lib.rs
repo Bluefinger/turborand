@@ -86,7 +86,7 @@ use crate::{entropy::generate_entropy, source::WyRand};
 #[repr(transparent)]
 pub struct Rng<S: State + Debug>(WyRand<S>);
 
-/// Initialises an `Rng` instance with a `CellState`. Not thread safe.
+/// Initialises an [`Rng`] instance with a [`CellState`]. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
@@ -101,7 +101,7 @@ pub struct Rng<S: State + Debug>(WyRand<S>);
 /// let value = rand.bool();
 /// ```
 ///
-/// Else, pass in a `u64` value to get an `Rng` instance with the seed
+/// Else, pass in a `u64` value to get an [`Rng`] instance with the seed
 /// initialised to that value.
 ///
 /// ```
@@ -121,7 +121,7 @@ macro_rules! rng {
     };
 }
 
-/// Initialises an `Rng` instance with an `AtomicState`. Thread safe.
+/// Initialises an [`Rng`] instance with an [`AtomicState`]. Thread safe.
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
@@ -137,7 +137,7 @@ macro_rules! rng {
 /// let value = rand.bool();
 /// ```
 ///
-/// Else, pass in a `u64` value to get an `Rng` instance with the seed
+/// Else, pass in a `u64` value to get an [`Rng`] instance with the seed
 /// initialised to that value.
 ///
 /// ```
@@ -161,14 +161,14 @@ macro_rules! atomic_rng {
 }
 
 impl<S: State + Debug> Rng<S> {
-    /// Creates a new RNG with a randomised seed.
+    /// Creates a new [`Rng`] with a randomised seed.
     #[inline]
     #[must_use]
     pub fn new() -> Self {
         Self(WyRand::<S>::with_seed(RNG.with(|rng| rng.gen_u64())))
     }
 
-    /// Creates a new RNG with a specific seed value.
+    /// Creates a new [`Rng`] with a specific seed value.
     #[inline]
     #[must_use]
     pub fn with_seed(seed: u64) -> Self {
@@ -181,7 +181,7 @@ impl<S: State + Debug> Rng<S> {
         RNG.with(|rng| rng.reseed(seed));
     }
 
-    /// Reseeds the RNG with a new seed/state.
+    /// Reseeds the [`Rng`] with a new seed/state.
     #[inline]
     pub fn reseed(&self, seed: u64) {
         self.0.reseed(seed << 1 | 1);
@@ -645,7 +645,7 @@ impl<S: State + Debug> Rng<S> {
     /// ```
     /// # Panics
     ///
-    /// Panics if the `radix is zero or greater than 36.
+    /// Panics if the `radix` is zero or greater than 36.
     #[inline]
     pub fn digit(&self, radix: u8) -> char {
         match radix {
@@ -739,7 +739,7 @@ impl<S: State + Debug> Rng<S> {
 }
 
 impl<S: State + Debug> Default for Rng<S> {
-    /// Initialises a default instance of `Rng`. Warning, the default is
+    /// Initialises a default instance of [`Rng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
     /// # Example
@@ -758,7 +758,7 @@ impl<S: State + Debug> Default for Rng<S> {
 }
 
 impl<S: State + Debug> Clone for Rng<S> {
-    /// Clones the RNG by deterministically deriving a new RNG based on the initial
+    /// Clones the [`Rng`] by deterministically deriving a new [`Rng`] based on the initial
     /// seed.
     ///
     /// # Example
@@ -788,8 +788,8 @@ impl<S: State + Debug> Debug for Rng<S> {
     }
 }
 
-/// A wrapper struct around `Rng<CellState>` to allow implementing
-/// `RngCore` and `SeedableRng` traits in a compatible manner.
+/// A wrapper struct around [`Rng<CellState>`] to allow implementing
+/// [`RngCore`] and [`SeedableRng`] traits in a compatible manner.
 #[cfg(feature = "rand")]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
@@ -797,7 +797,7 @@ pub struct RandCompat(Rng<CellState>);
 
 #[cfg(feature = "rand")]
 impl RandCompat {
-    /// Creates a new `RandCompat` with a randomised seed.
+    /// Creates a new [`RandCompat`] with a randomised seed.
     #[inline]
     #[must_use]
     pub fn new() -> Self {
@@ -807,7 +807,7 @@ impl RandCompat {
 
 #[cfg(feature = "rand")]
 impl Default for RandCompat {
-    /// Initialises a default instance of `RandCompat`. Warning, the default is
+    /// Initialises a default instance of [`RandCompat`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
     /// # Example
@@ -926,6 +926,6 @@ mod tests {
 
         let result = get_rand_num(&mut rand);
 
-        assert_eq!(result, 14839104130206199084, "Should receive expect random u64 output, got {} instead", result);
+        assert_eq!(result, 14_839_104_130_206_199_084, "Should receive expect random u64 output, got {} instead", result);
     }
 }

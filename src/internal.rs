@@ -3,10 +3,10 @@ use crate::{Cell, Debug};
 #[cfg(feature = "atomic")]
 use crate::{AtomicU64, Ordering};
 
-/// Trait for implementing `State` to be used in a Rng.
+/// Trait for implementing [`State`] to be used in a `Rng`.
 ///
-/// Those implementing `State` should also ensure to implement
-/// a custom `Debug` formatter on the structs in order to prevent
+/// Those implementing [`State`] should also ensure to implement
+/// a custom [`Debug`] formatter on the structs in order to prevent
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
 pub trait State {
@@ -20,8 +20,8 @@ pub trait State {
     fn set(&self, value: u64);
 }
 
-/// Non-`Send` and `Sync` state for Rng. Stores the current
-/// state of the PRNG in a `Cell`.
+/// Non-[`Send`] and [`Sync`] state for `Rng`. Stores the current
+/// state of the PRNG in a [`Cell`].
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
 pub struct CellState(Cell<u64>);
@@ -52,8 +52,8 @@ impl Debug for CellState {
     }
 }
 
-/// `Send` and `Sync` state for Rng. Stores the current
-/// state of the PRNG in a `AtomicU64`.
+/// [`Send`] and [`Sync`] state for `Rng`. Stores the current
+/// state of the PRNG in a [`AtomicU64`].
 ///
 /// ```
 /// use turborand::*;

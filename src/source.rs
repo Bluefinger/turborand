@@ -3,8 +3,12 @@ use crate::{
     Debug,
 };
 
+#[cfg(feature = "serialize")]
+use crate::{Deserialize, Serialize};
+
 /// A Wyrand Random Number Generator
 #[derive(PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub(crate) struct WyRand<S: Debug + State = CellState> {
     state: S,

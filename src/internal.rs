@@ -3,6 +3,9 @@ use crate::{Cell, Debug};
 #[cfg(feature = "atomic")]
 use crate::{AtomicU64, Ordering};
 
+#[cfg(feature = "serialize")]
+use crate::{Deserialize, Serialize};
+
 /// Trait for implementing [`State`] to be used in a `Rng`.
 ///
 /// Those implementing [`State`] should also ensure to implement
@@ -23,6 +26,7 @@ pub trait State {
 /// Non-[`Send`] and [`Sync`] state for `Rng`. Stores the current
 /// state of the PRNG in a [`Cell`].
 #[derive(PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct CellState(Cell<u64>);
 
@@ -75,6 +79,7 @@ impl Debug for CellState {
 /// let res2 = thread_02.join();
 /// ```
 #[cfg(feature = "atomic")]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
 #[repr(transparent)]
 pub struct AtomicState(AtomicU64);

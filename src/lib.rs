@@ -83,13 +83,13 @@ mod internal;
 mod source;
 
 pub use crate::internal::*;
-use crate::{entropy::generate_entropy, source::WyRand};
+use crate::{entropy::generate_entropy, source::wyrand::WyRand};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Rng<S: State + Debug>(WyRand<S>);
+pub struct Rng<S: State<Seed = u64> + Debug>(WyRand<S>);
 
 /// Initialises an [`Rng`] instance with a [`CellState`]. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
@@ -119,10 +119,10 @@ pub struct Rng<S: State + Debug>(WyRand<S>);
 #[macro_export]
 macro_rules! rng {
     () => {
-        Rng::<CellState>::default()
+        Rng::<CellState<u64>>::default()
     };
     ($seed:expr) => {
-        Rng::<CellState>::with_seed($seed)
+        Rng::<CellState<u64>>::with_seed($seed)
     };
 }
 
@@ -165,7 +165,7 @@ macro_rules! atomic_rng {
     };
 }
 
-impl<S: State + Debug> Rng<S> {
+impl<S: State<Seed = u64> + Debug> Rng<S> {
     /// Creates a new [`Rng`] with a randomised seed.
     #[inline]
     #[must_use]
@@ -743,7 +743,7 @@ impl<S: State + Debug> Rng<S> {
     modulus_int!(mod_u8, u8, u16, gen_u8);
 }
 
-impl<S: State + Debug> Default for Rng<S> {
+impl<S: State<Seed = u64> + Debug> Default for Rng<S> {
     /// Initialises a default instance of [`Rng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
@@ -762,7 +762,7 @@ impl<S: State + Debug> Default for Rng<S> {
     }
 }
 
-impl<S: State + Debug> Clone for Rng<S> {
+impl<S: State<Seed = u64> + Debug> Clone for Rng<S> {
     /// Clones the [`Rng`] by deterministically deriving a new [`Rng`] based on the initial
     /// seed.
     ///
@@ -787,7 +787,7 @@ impl<S: State + Debug> Clone for Rng<S> {
     }
 }
 
-impl<S: State + Debug> Debug for Rng<S> {
+impl<S: State<Seed = u64> + Debug> Debug for Rng<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Rng").field(&self.0).finish()
     }
@@ -798,7 +798,7 @@ impl<S: State + Debug> Debug for Rng<S> {
 #[cfg(feature = "rand")]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandCompat(Rng<CellState>);
+pub struct RandCompat(Rng<CellState<u64>>);
 
 #[cfg(feature = "rand")]
 impl RandCompat {
@@ -867,15 +867,15 @@ impl SeedableRng for RandCompat {
 }
 
 #[cfg(feature = "rand")]
-impl From<Rng<CellState>> for RandCompat {
+impl From<Rng<CellState<u64>>> for RandCompat {
     #[inline]
-    fn from(rng: Rng<CellState>) -> Self {
+    fn from(rng: Rng<CellState<u64>>) -> Self {
         Self(rng)
     }
 }
 
 #[cfg(feature = "rand")]
-impl From<RandCompat> for Rng<CellState> {
+impl From<RandCompat> for Rng<CellState<u64>> {
     #[inline]
     fn from(rand: RandCompat) -> Self {
         rand.0
@@ -883,7 +883,7 @@ impl From<RandCompat> for Rng<CellState> {
 }
 
 thread_local! {
-    static RNG: Rc<Rng<CellState>> = Rc::new(Rng(WyRand::<CellState>::with_seed(
+    static RNG: Rc<Rng<CellState<u64>>> = Rc::new(Rng(WyRand::<CellState<u64>>::with_seed(
         u64::from_ne_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
     )));
 }

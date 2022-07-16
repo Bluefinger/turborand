@@ -12,15 +12,16 @@ use crate::{Deserialize, Serialize};
 /// a custom [`Debug`] formatter on the structs in order to prevent
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
-pub trait State {
+pub trait State: Sized {
+    type Seed: Sized + Default;
     /// Initialise a state with a seed value.
-    fn with_seed(seed: u64) -> Self
+    fn with_seed(seed: Self::Seed) -> Self
     where
         Self: Sized;
     /// Return the current state.
-    fn get(&self) -> u64;
+    fn get(&self) -> Self::Seed;
     /// Set the state with a new value.
-    fn set(&self, value: u64);
+    fn set(&self, value: Self::Seed);
 }
 
 /// Non-[`Send`] and [`Sync`] state for `Rng`. Stores the current
@@ -28,29 +29,28 @@ pub trait State {
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct CellState(Cell<u64>);
+pub struct CellState<S: Copy + Default>(Cell<S>);
 
-impl State for CellState {
+impl<S: Copy + Default> State for CellState<S> {
+    type Seed = S;
+
     #[inline]
-    fn with_seed(seed: u64) -> Self
-    where
-        Self: Sized,
-    {
+    fn with_seed(seed: S) -> Self {
         Self(Cell::new(seed))
     }
 
     #[inline]
-    fn get(&self) -> u64 {
+    fn get(&self) -> S {
         self.0.get()
     }
 
     #[inline]
-    fn set(&self, value: u64) {
+    fn set(&self, value: S) {
         self.0.set(value);
     }
 }
 
-impl Debug for CellState {
+impl<S: Copy + Default> Debug for CellState<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("CellState").finish()
     }
@@ -86,6 +86,7 @@ pub struct AtomicState(AtomicU64);
 
 #[cfg(feature = "atomic")]
 impl State for AtomicState {
+    type Seed = u64;
     #[inline]
     fn with_seed(seed: u64) -> Self
     where
@@ -139,7 +140,7 @@ mod tests {
 
     #[test]
     fn cell_state_no_leaking_debug() {
-        let state = CellState::with_seed(Default::default());
+        let state = CellState::<u64>::with_seed(Default::default());
 
         assert_eq!(format!("{state:?}"), "CellState");
     }

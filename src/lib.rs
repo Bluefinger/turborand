@@ -78,11 +78,13 @@ use serde::{Deserialize, Serialize};
 #[macro_use]
 mod methods;
 
+mod buffer;
 mod entropy;
 mod internal;
+mod secure_rng;
 mod source;
 
-pub use crate::internal::*;
+pub use crate::{internal::*, secure_rng::*};
 use crate::{entropy::generate_entropy, source::wyrand::WyRand};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
@@ -751,8 +753,8 @@ impl<S: State<Seed = u64> + Debug> Default for Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng1 = Rng::<CellState>::default();
-    /// let rng2 = Rng::<CellState>::default();
+    /// let rng1 = Rng::<CellState<u64>>::default();
+    /// let rng2 = Rng::<CellState<u64>>::default();
     ///
     /// assert_ne!(rng1.u64(..), rng2.u64(..));
     /// ```

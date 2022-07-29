@@ -3,7 +3,7 @@ macro_rules! range_int {
         #[doc = $doc]
         ///
         /// # Panics
-        /// 
+        ///
         /// Panics if the range is empty or invalid.
         #[inline]
         pub fn $value(&self, bounds: impl RangeBounds<$value>) -> $value {
@@ -61,6 +61,37 @@ macro_rules! rand_int {
             const SIZE: usize = core::mem::size_of::<$int>();
             let mut bytes = [0u8; SIZE];
             self.fill_bytes(&mut bytes);
+            <$int>::from_le_bytes(bytes)
+        }
+    };
+}
+
+macro_rules! rand_int_const {
+    ($func:ident, $int:ty, $doc:tt) => {
+        #[doc = $doc]
+        #[inline]
+        pub fn $func(&self) -> $int {
+            <$int>::from_le_bytes(self.0.rand::<{ core::mem::size_of::<$int>() }>())
+        }
+    };
+}
+
+macro_rules! rand_int_generate {
+    ($func:ident, $int:ty, $doc:tt) => {
+        #[doc = $doc]
+        #[inline]
+        pub fn $func(&self) -> $int {
+            const SIZE: usize = core::mem::size_of::<$int>();
+            let mut bytes = [0u8; SIZE];
+            let mut buffer = bytes.as_mut_slice();
+            let mut length = SIZE;
+            while length > 0 {
+                let output = self.0.generate();
+                let fill = output.len().min(length);
+                buffer[..fill].copy_from_slice(&output[..fill]);
+                buffer = &mut buffer[fill..];
+                length -= fill;
+            }
             <$int>::from_le_bytes(bytes)
         }
     };

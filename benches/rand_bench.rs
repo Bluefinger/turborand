@@ -146,5 +146,16 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, turborand_cell_benchmark, turborand_atomic_benchmark);
+fn turborand_secure_benchmark(c: &mut Criterion) {
+    c.bench_function("SecureRng new", |b| {
+        b.iter(|| black_box(SecureRng::<CellState<[u32; 16]>>::new()));
+    });
+    c.bench_function("SecureRng gen_u64", |b| {
+        let rand = SecureRng::<CellState<[u32; 16]>>::new();
+
+        b.iter(|| black_box(rand.gen_u64()));
+    });
+}
+
+criterion_group!(benches, turborand_cell_benchmark, turborand_atomic_benchmark, turborand_secure_benchmark);
 criterion_main!(benches);

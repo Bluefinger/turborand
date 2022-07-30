@@ -32,14 +32,40 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
         self.state.set(seed);
     }
 
-    /// Generates random bytes from the RNG source.
     #[inline]
-    pub(crate) fn rand(&self) -> [u8; core::mem::size_of::<u64>()] {
+    fn generate(&self) -> [u8; core::mem::size_of::<u64>()] {
         let state = self.state.get().wrapping_add(0xa076_1d64_78bd_642f);
         self.state.set(state);
         let t = u128::from(state).wrapping_mul(u128::from(state ^ 0xe703_7ed1_a0b4_28db));
         let ret = (t.wrapping_shr(64) ^ t) as u64;
         ret.to_le_bytes()
+    }
+
+    /// Generates random bytes from the RNG source.
+    #[inline]
+    pub(crate) fn rand<const SIZE: usize>(&self) -> [u8; SIZE] {
+        let mut output = [0u8; SIZE];
+        
+        self.fill(&mut output);
+
+        output
+    }
+
+    #[inline]
+    pub fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
+        let mut output = buffer.as_mut();
+        let mut remaining = output.len();
+
+        while remaining > 0 {
+            let input = self.generate();
+            let fill = output.len().min(input.len());
+
+            output[..fill].copy_from_slice(&input[..fill]);
+
+            output = &mut output[fill..];
+
+            remaining -= fill;
+        }
     }
 }
 
@@ -109,18 +135,18 @@ mod tests {
         let cloned2 = rng2.clone();
 
         assert_ne!(
-            &rng1.rand(),
-            &cloned1.rand(),
+            &rng1.generate(),
+            &cloned1.generate(),
             "cloned rngs should not match against the original"
         );
         assert_ne!(
-            &rng2.rand(),
-            &cloned2.rand(),
+            &rng2.generate(),
+            &cloned2.generate(),
             "cloned rngs should not match against the original"
         );
         assert_eq!(
-            &cloned1.rand(),
-            &cloned2.rand(),
+            &cloned1.generate(),
+            &cloned2.generate(),
             "cloning should be deterministic"
         );
     }

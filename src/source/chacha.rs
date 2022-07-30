@@ -9,19 +9,16 @@ const INITIAL_STATE: &[u8; 16] = b"expand 32-byte k";
 
 /// A ChaCha8 based Random Number Generator
 #[derive(PartialEq, Eq)]
-pub(crate) struct ChaCha8<S: Debug + State = CellState<[u32; 16]>>
-where
-    S: State<Seed = [u32; 16]>,
-{
-    state: S,
+pub(crate) struct ChaCha8 {
+    state: CellState<[u32; 16]>,
     cache: Cell<EntropyBuffer<64>>,
 }
 
-impl<S: State<Seed = [u32; 16]> + Debug> ChaCha8<S> {
+impl ChaCha8 {
     #[inline]
     pub(crate) fn with_seed(seed: [u8; 40]) -> Self {
         Self {
-            state: S::with_seed(init_state(seed)),
+            state: CellState::with_seed(init_state(seed)),
             cache: Cell::new(EntropyBuffer::<64>::new()),
         }
     }
@@ -32,7 +29,7 @@ impl<S: State<Seed = [u32; 16]> + Debug> ChaCha8<S> {
     }
 
     #[inline]
-    pub(crate) fn generate(&self) -> [u8; 64] {
+    fn generate(&self) -> [u8; 64] {
         let mut new_state = calculate_block::<4>(self.state.get());
 
         let mut output = [0_u8; 64];
@@ -56,26 +53,32 @@ impl<S: State<Seed = [u32; 16]> + Debug> ChaCha8<S> {
     #[inline]
     pub(crate) fn rand<const OUTPUT: usize>(&self) -> [u8; OUTPUT] {
         let mut value = [0u8; OUTPUT];
-        let mut cache = self.cache.get();
 
-        cache.fill_bytes_with_source(&mut value, || self.generate());
-
-        self.cache.set(cache);
+        self.fill(&mut value);
 
         value
     }
+
+    #[inline]
+    pub(crate) fn fill<B: AsMut<[u8]>>(&self, buffer: B) {
+        let mut cache = self.cache.get();
+
+        cache.fill_bytes_with_source(buffer, || self.generate());
+
+        self.cache.set(cache);
+    }
 }
 
-impl<S: State<Seed = [u32; 16]> + Debug> Clone for ChaCha8<S> {
+impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: S::with_seed(init_state(self.rand::<40>())),
+            state: CellState::with_seed(init_state(self.rand::<40>())),
             cache: Cell::new(EntropyBuffer::<64>::new()),
         }
     }
 }
 
-impl<S: State<Seed = [u32; 16]> + Debug> Debug for ChaCha8<S> {
+impl Debug for ChaCha8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("ChaCha8").field(&self.state).finish()
     }
@@ -179,7 +182,7 @@ mod tests {
         ($test:ident, $seed:tt, $output1:tt) => {
             #[test]
             fn $test() {
-                let source: ChaCha8<CellState<[u32; 16]>> = ChaCha8::with_seed($seed);
+                let source = ChaCha8::with_seed($seed);
 
                 let expected_output: [u8; 64] = $output1;
                 let output = source.generate();
@@ -191,14 +194,14 @@ mod tests {
 
     #[test]
     fn no_leaking_debug() {
-        let source: ChaCha8<CellState<[u32; 16]>> = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40]);
 
         assert_eq!(format!("{:?}", source), "ChaCha8(CellState)");
     }
 
     #[test]
     fn buffered_rand() {
-        let source: ChaCha8<CellState<[u32; 16]>> = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40]);
 
         let output = source.rand::<40>();
 
@@ -225,7 +228,7 @@ mod tests {
 
     #[test]
     fn stress_rand_buffer() {
-        let source: ChaCha8<CellState<[u32; 16]>> = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40]);
 
         let mut output = [0u8; 40];
 

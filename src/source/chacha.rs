@@ -1,7 +1,6 @@
 use crate::{
     buffer::EntropyBuffer,
     entropy::generate_entropy,
-    internal::{CellState, State},
     Cell, Debug,
 };
 
@@ -10,7 +9,7 @@ const INITIAL_STATE: &[u8; 16] = b"expand 32-byte k";
 /// A ChaCha8 based Random Number Generator
 #[derive(PartialEq, Eq)]
 pub(crate) struct ChaCha8 {
-    state: CellState<[u32; 16]>,
+    state: Cell<[u32; 16]>,
     cache: Cell<EntropyBuffer<64>>,
 }
 
@@ -18,7 +17,7 @@ impl ChaCha8 {
     #[inline]
     pub(crate) fn with_seed(seed: [u8; 40]) -> Self {
         Self {
-            state: CellState::with_seed(init_state(seed)),
+            state: Cell::new(init_state(seed)),
             cache: Cell::new(EntropyBuffer::<64>::new()),
         }
     }
@@ -36,8 +35,7 @@ impl ChaCha8 {
 
         new_state
             .iter()
-            .map(|num| num.to_ne_bytes())
-            .flatten()
+            .flat_map(|num| num.to_ne_bytes())
             .zip(output.iter_mut())
             .for_each(|(val, slot)| *slot = val);
 
@@ -72,7 +70,7 @@ impl ChaCha8 {
 impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: CellState::with_seed(init_state(self.rand::<40>())),
+            state: Cell::new(init_state(self.rand::<40>())),
             cache: Cell::new(EntropyBuffer::<64>::new()),
         }
     }

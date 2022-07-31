@@ -161,7 +161,7 @@ fn turborand_secure_benchmark(c: &mut Criterion) {
         let data = [0u8; 21];
 
         b.iter_batched(
-            || data.clone(),
+            || data,
             |mut data| rand.fill_bytes(&mut data),
             criterion::BatchSize::SmallInput,
         )

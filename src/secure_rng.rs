@@ -13,7 +13,7 @@ impl SecureRng {
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        Self(ChaCha8::with_seed(SECURE.with(|rng| rng.gen::<40>())))
+        SECURE.with(|rng| rng.as_ref().clone())
     }
 
     /// Reseeds the current thread-local generator.
@@ -52,6 +52,50 @@ impl SeededCore for SecureRng {
 
 impl SecureCore for SecureRng {}
 impl TurboRand for SecureRng {}
+
+impl Default for SecureRng {
+    /// Initialises a default instance of [`SecureRng`]. Warning, the default is
+    /// seeded with a randomly generated state, so this is **not** deterministic.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rng1 = SecureRng::default();
+    /// let rng2 = SecureRng::default();
+    ///
+    /// assert_ne!(rng1.u64(..), rng2.u64(..));
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Clone for SecureRng {
+    /// Clones the [`SecureRng`] by deterministically deriving a new [`SecureRng`] based on the initial
+    /// seed.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rng1 = SecureRng::with_seed([0u8; 40]);
+    /// let rng2 = SecureRng::with_seed([0u8; 40]);
+    ///
+    /// // Use the RNGs once each.
+    /// rng1.bool();
+    /// rng2.bool();
+    ///
+    /// let cloned1 = rng1.clone();
+    /// let cloned2 = rng2.clone();
+    ///
+    /// assert_eq!(cloned1.u64(..), cloned2.u64(..));
+    /// ```
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 thread_local! {
     static SECURE: Rc<SecureRng> = Rc::new(SecureRng::with_seed(generate_entropy::<40>()));

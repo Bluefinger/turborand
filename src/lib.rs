@@ -116,10 +116,10 @@ pub use crate::{internal::*, rng::*, secure_rng::*, traits::*};
 #[macro_export]
 macro_rules! rng {
     () => {
-        Rng::<CellState<u64>>::default()
+        Rng::default()
     };
     ($seed:expr) => {
-        Rng::<CellState<u64>>::with_seed($seed)
+        Rng::with_seed($seed)
     };
 }
 
@@ -155,10 +155,10 @@ macro_rules! rng {
 #[macro_export]
 macro_rules! atomic_rng {
     () => {
-        Rng::<AtomicState>::default()
+        AtomicRng::default()
     };
     ($seed:expr) => {
-        Rng::<AtomicState>::with_seed($seed)
+        AtomicRng::with_seed($seed)
     };
 }
 
@@ -173,7 +173,7 @@ pub struct RandCompat<T: TurboCore + Default>(T);
 #[cfg(feature = "rand")]
 impl<T: TurboCore + Default> RandCompat<T> {
     /// Creates a new [`RandCompat`] with a randomised seed.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use turborand::*;
@@ -181,7 +181,7 @@ impl<T: TurboCore + Default> RandCompat<T> {
     ///
     /// let mut rng = RandCompat::<SecureRng>::new();
     /// let mut buffer = [0u8; 32];
-    /// 
+    ///
     /// rng.fill_bytes(&mut buffer);
     ///
     /// assert_ne!(&buffer, &[0u8; 32]);
@@ -247,9 +247,17 @@ impl<T: TurboCore + Default> From<T> for RandCompat<T> {
 }
 
 #[cfg(feature = "rand")]
-impl<S: State<Seed = u64> + Debug> From<RandCompat<Rng<S>>> for Rng<S> {
+impl From<RandCompat<Rng>> for Rng {
     #[inline]
-    fn from(rand: RandCompat<Rng<S>>) -> Self {
+    fn from(rand: RandCompat<Rng>) -> Self {
+        rand.0
+    }
+}
+
+#[cfg(all(feature = "rand", feature = "atomic"))]
+impl From<RandCompat<AtomicRng>> for AtomicRng {
+    #[inline]
+    fn from(rand: RandCompat<AtomicRng>) -> Self {
         rand.0
     }
 }

@@ -1,23 +1,25 @@
 use crate::{
-    entropy::generate_entropy, CellState, Debug, Rc, SeededCore, State,
-    TurboCore, TurboRand, WyRand,
+    entropy::generate_entropy, CellState, Debug, Rc, SeededCore, TurboCore, TurboRand, WyRand,
 };
 
+#[cfg(feature = "atomic")]
+use crate::AtomicState;
+
 #[cfg(feature = "serialize")]
-use crate::{Serialize, Deserialize};
+use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Rng<S: State<Seed = u64> + Debug>(WyRand<S>);
+pub struct Rng(WyRand<CellState<u64>>);
 
-impl<S: State<Seed = u64> + Debug> Rng<S> {
+impl Rng {
     /// Creates a new [`Rng`] with a randomised seed.
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        Self(WyRand::<S>::with_seed(RNG.with(|rng| rng.gen_u64())))
+        Self(WyRand::with_seed(RNG.with(|rng| rng.gen_u64())))
     }
 
     /// Reseeds the current thread-local generator.
@@ -27,7 +29,7 @@ impl<S: State<Seed = u64> + Debug> Rng<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> TurboCore for Rng<S> {
+impl TurboCore for Rng {
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         self.0.rand::<SIZE>()
     }
@@ -37,7 +39,7 @@ impl<S: State<Seed = u64> + Debug> TurboCore for Rng<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> SeededCore for Rng<S> {
+impl SeededCore for Rng {
     type Seed = u64;
 
     fn with_seed(seed: Self::Seed) -> Self {
@@ -49,9 +51,9 @@ impl<S: State<Seed = u64> + Debug> SeededCore for Rng<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> TurboRand for Rng<S> {}
+impl TurboRand for Rng {}
 
-impl<S: State<Seed = u64> + Debug> Default for Rng<S> {
+impl Default for Rng {
     /// Initialises a default instance of [`Rng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
@@ -59,8 +61,8 @@ impl<S: State<Seed = u64> + Debug> Default for Rng<S> {
     /// ```
     /// use turborand::*;
     ///
-    /// let rng1 = Rng::<CellState<u64>>::default();
-    /// let rng2 = Rng::<CellState<u64>>::default();
+    /// let rng1 = Rng::default();
+    /// let rng2 = Rng::default();
     ///
     /// assert_ne!(rng1.u64(..), rng2.u64(..));
     /// ```
@@ -70,7 +72,7 @@ impl<S: State<Seed = u64> + Debug> Default for Rng<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> Clone for Rng<S> {
+impl Clone for Rng {
     /// Clones the [`Rng`] by deterministically deriving a new [`Rng`] based on the initial
     /// seed.
     ///
@@ -95,14 +97,104 @@ impl<S: State<Seed = u64> + Debug> Clone for Rng<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> Debug for Rng<S> {
+impl Debug for Rng {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Rng").field(&self.0).finish()
     }
 }
 
+/// A Random Number generator, powered by the `WyRand` algorithm, but with
+/// thread-safe internal state.
+#[cfg(feature = "atomic")]
+#[derive(PartialEq, Eq)]
+#[repr(transparent)]
+pub struct AtomicRng(WyRand<AtomicState>);
+
+#[cfg(feature = "atomic")]
+impl AtomicRng {
+    /// Creates a new [`AtomicRng`] with a randomised seed.
+    #[inline]
+    #[must_use]
+    pub fn new() -> Self {
+        Self(WyRand::with_seed(RNG.with(|rng| rng.gen_u64())))
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl Default for AtomicRng {
+    /// Initialises a default instance of [`AtomicRng`]. Warning, the default is
+    /// seeded with a randomly generated state, so this is **not** deterministic.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rng1 = AtomicRng::default();
+    /// let rng2 = AtomicRng::default();
+    ///
+    /// assert_ne!(rng1.u64(..), rng2.u64(..));
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl Clone for AtomicRng {
+    /// Clones the [`AtomicRng`] by deterministically deriving a new [`AtomicRng`] based on the initial
+    /// seed.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rng1 = atomic_rng!(Default::default());
+    /// let rng2 = atomic_rng!(Default::default());
+    ///
+    /// // Use the RNGs once each.
+    /// rng1.bool();
+    /// rng2.bool();
+    ///
+    /// let cloned1 = rng1.clone();
+    /// let cloned2 = rng2.clone();
+    ///
+    /// assert_eq!(cloned1.u64(..), cloned2.u64(..));
+    /// ```
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl TurboCore for AtomicRng {
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        self.0.rand::<SIZE>()
+    }
+
+    fn fill_bytes<B: AsMut<[u8]>>(&self, buffer: B) {
+        self.0.fill(buffer);
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl SeededCore for AtomicRng {
+    type Seed = u64;
+
+    fn with_seed(seed: Self::Seed) -> Self {
+        Self(WyRand::with_seed(seed << 1 | 1))
+    }
+
+    fn reseed(&self, seed: Self::Seed) {
+        self.0.reseed(seed);
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl TurboRand for AtomicRng {}
+
 thread_local! {
-    static RNG: Rc<Rng<CellState<u64>>> = Rc::new(Rng(WyRand::<CellState<u64>>::with_seed(
+    static RNG: Rc<Rng> = Rc::new(Rng(WyRand::with_seed(
         u64::from_ne_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
     )));
 }
@@ -151,6 +243,9 @@ mod tests {
 
         let json = serde_json::to_string(&rng).unwrap();
 
-        assert_eq!(json, "{\"state\":24691}", "Serialized output not as expected");
+        assert_eq!(
+            json, "{\"state\":24691}",
+            "Serialized output not as expected"
+        );
     }
 }

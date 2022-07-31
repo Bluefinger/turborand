@@ -6,7 +6,7 @@ use crate::{AtomicU64, Ordering};
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
 
-/// Trait for implementing [`State`] to be used in a `Rng`.
+/// Trait for implementing [`State`] to be used in `WyRand`.
 ///
 /// Those implementing [`State`] should also ensure to implement
 /// a custom [`Debug`] formatter on the structs in order to prevent
@@ -57,7 +57,7 @@ impl<S: Copy + Default> Debug for CellState<S> {
     }
 }
 
-/// [`Send`] and [`Sync`] state for `Rng`. Stores the current
+/// [`Send`] and [`Sync`] state for `AtomicRng`. Stores the current
 /// state of the PRNG in a [`AtomicU64`].
 ///
 /// ```
@@ -65,7 +65,7 @@ impl<S: Copy + Default> Debug for CellState<S> {
 /// use std::sync::Arc;
 /// use std::thread;
 ///
-/// let rand = Arc::new(atomic_rng!()); // Will not compile with `CellState`
+/// let rand = Arc::new(atomic_rng!()); // Will not compile with `Rng`
 /// let rand2 = rand.clone();
 ///
 /// let thread_01 = thread::spawn(move || {
@@ -80,7 +80,6 @@ impl<S: Copy + Default> Debug for CellState<S> {
 /// let res2 = thread_02.join();
 /// ```
 #[cfg(feature = "atomic")]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
 #[repr(transparent)]
 pub struct AtomicState(AtomicU64);
@@ -98,12 +97,12 @@ impl State for AtomicState {
 
     #[inline]
     fn get(&self) -> u64 {
-        self.0.load(Ordering::Relaxed)
+        self.0.load(Ordering::SeqCst)
     }
 
     #[inline]
     fn set(&self, value: u64) {
-        self.0.store(value, Ordering::Relaxed);
+        self.0.store(value, Ordering::SeqCst);
     }
 }
 

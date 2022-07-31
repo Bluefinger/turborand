@@ -69,7 +69,7 @@ use std::time::Instant;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(feature = "rand")]
-use rand_core::{RngCore, SeedableRng};
+use rand_core::RngCore;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -162,26 +162,39 @@ macro_rules! atomic_rng {
     };
 }
 
-/// A wrapper struct around [`Rng<CellState>`] to allow implementing
-/// [`RngCore`] and [`SeedableRng`] traits in a compatible manner.
+/// A wrapper struct around [`TurboCore`] to allow implementing
+/// [`RngCore`] trait in a compatible manner.
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandCompat(Rng<CellState<u64>>);
+pub struct RandCompat<T: TurboCore + Default>(T);
 
 #[cfg(feature = "rand")]
-impl RandCompat {
+impl<T: TurboCore + Default> RandCompat<T> {
     /// Creates a new [`RandCompat`] with a randomised seed.
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    /// use rand_core::RngCore;
+    ///
+    /// let mut rng = RandCompat::<SecureRng>::new();
+    /// let mut buffer = [0u8; 32];
+    /// 
+    /// rng.fill_bytes(&mut buffer);
+    ///
+    /// assert_ne!(&buffer, &[0u8; 32]);
+    /// ```
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        Self(Rng::default())
+        Self(T::default())
     }
 }
 
 #[cfg(feature = "rand")]
-impl Default for RandCompat {
+impl<T: TurboCore + Default> Default for RandCompat<T> {
     /// Initialises a default instance of [`RandCompat`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
@@ -190,8 +203,8 @@ impl Default for RandCompat {
     /// use turborand::*;
     /// use rand_core::RngCore;
     ///
-    /// let mut rng1 = RandCompat::default();
-    /// let mut rng2 = RandCompat::default();
+    /// let mut rng1 = RandCompat::<SecureRng>::default();
+    /// let mut rng2 = RandCompat::<SecureRng>::default();
     ///
     /// assert_ne!(rng1.next_u64(), rng2.next_u64());
     /// ```
@@ -202,7 +215,7 @@ impl Default for RandCompat {
 }
 
 #[cfg(feature = "rand")]
-impl RngCore for RandCompat {
+impl<T: TurboCore + Default> RngCore for RandCompat<T> {
     #[inline]
     fn next_u32(&mut self) -> u32 {
         self.0.gen_u32()
@@ -226,28 +239,25 @@ impl RngCore for RandCompat {
 }
 
 #[cfg(feature = "rand")]
-impl SeedableRng for RandCompat {
-    type Seed = [u8; core::mem::size_of::<u64>()];
-
+impl<T: TurboCore + Default> From<T> for RandCompat<T> {
     #[inline]
-    #[must_use]
-    fn from_seed(seed: Self::Seed) -> Self {
-        Self(Rng::with_seed(u64::from_be_bytes(seed)))
-    }
-}
-
-#[cfg(feature = "rand")]
-impl From<Rng<CellState<u64>>> for RandCompat {
-    #[inline]
-    fn from(rng: Rng<CellState<u64>>) -> Self {
+    fn from(rng: T) -> Self {
         Self(rng)
     }
 }
 
 #[cfg(feature = "rand")]
-impl From<RandCompat> for Rng<CellState<u64>> {
+impl<S: State<Seed = u64> + Debug> From<RandCompat<Rng<S>>> for Rng<S> {
     #[inline]
-    fn from(rand: RandCompat) -> Self {
+    fn from(rand: RandCompat<Rng<S>>) -> Self {
+        rand.0
+    }
+}
+
+#[cfg(feature = "rand")]
+impl From<RandCompat<SecureRng>> for SecureRng {
+    #[inline]
+    fn from(rand: RandCompat<SecureRng>) -> Self {
         rand.0
     }
 }

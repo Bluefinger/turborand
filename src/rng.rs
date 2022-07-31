@@ -133,7 +133,7 @@ mod tests {
 
         let rng = rng!(Default::default());
 
-        let mut rand: RandCompat = rng.into();
+        let mut rand = RandCompat::from(rng);
 
         let result = get_rand_num(&mut rand);
 

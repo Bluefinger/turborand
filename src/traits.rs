@@ -1,7 +1,23 @@
 use crate::{Bound, RangeBounds, repeat_with};
 
+/// Base trait for implementing a PRNG. Two methods must be
+/// implemented: [`TurboCore::gen`] and [`TurboCore::fill_bytes`].
+/// Once implemented, the rest of the trait provides default
+/// implementations for generating all integer type, though it is not
+/// recommended to override these.
 pub trait TurboCore: Sized {
     /// Returns an array of constant `SIZE` containing random `u8` values.
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::*;
+    ///
+    /// let rand = rng!(Default::default());
+    ///
+    /// let bytes = rand.gen::<10>();
+    ///
+    /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
+    /// ```
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE];
 
     /// Fills a mutable buffer with random bytes.
@@ -34,10 +50,17 @@ pub trait TurboCore: Sized {
     gen_int_const!(gen_isize, isize, "Returns a random `isize` value.");
 }
 
+/// Trait for implementing Seedable PRNGs, requiring that the PRNG
+/// implements [`TurboCore`] as a baseline. Seeds must be `Sized` in
+/// order to be used as the internal state of a PRNG.
 pub trait SeededCore: TurboCore {
+    /// Associated type for accepting valid Seed values. Must be `Sized`.
     type Seed: Sized;
 
+    /// Creates a new [`SeededCore`] with a specific seed value.
     fn with_seed(seed: Self::Seed) -> Self;
+
+    /// Reseeds the [`SeededCore`] with a new seed/state.
     fn reseed(&self, seed: Self::Seed);
 }
 
@@ -49,6 +72,12 @@ pub trait SeededCore: TurboCore {
 /// ensure that their PRNG source qualifies as cryptographically secure.
 pub trait SecureCore: TurboCore {}
 
+/// Extension trait for automatically implementing all [`TurboRand`] methods,
+/// as long as the struct implements [`TurboCore`]. All methods are provided
+/// as default implementations that build on top of [`TurboCore`] as well as
+/// some methods defined within [`TurboRand`] and thus are not recommended to
+/// be overridden, lest you potentially change the expected outcome of the
+/// methods.
 pub trait TurboRand: TurboCore {
     /// Returns a random `u128` within a given range bound.
     ///

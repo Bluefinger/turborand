@@ -13,6 +13,7 @@ use crate::{Deserialize, Serialize};
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
 pub trait State: Sized {
+    /// Seed Associated Type, must be `Sized` and `Default`.
     type Seed: Sized + Default;
     /// Initialise a state with a seed value.
     fn with_seed(seed: Self::Seed) -> Self

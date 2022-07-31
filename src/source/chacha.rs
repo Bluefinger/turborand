@@ -128,7 +128,7 @@ fn init_state(seed: [u8; 40]) -> [u32; 16] {
     ]
 }
 
-#[inline(always)]
+#[inline]
 fn add_xor_rotate<const A: usize, const B: usize, const C: usize, const LEFT: u32>(
     input: &mut [u32; 16],
 ) {

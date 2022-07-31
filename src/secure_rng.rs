@@ -9,12 +9,14 @@ use crate::{
 pub struct SecureRng(ChaCha8);
 
 impl SecureRng {
+    /// Creates a new [`SecureRng`] with a randomised seed.
     #[inline]
     #[must_use]
     pub fn new() -> Self {
         Self(ChaCha8::with_seed(SECURE.with(|rng| rng.gen::<40>())))
     }
 
+    /// Reseeds the current thread-local generator.
     #[inline]
     pub fn reseed_local(seed: [u8; 40]) {
         SECURE.with(|rng| rng.reseed(seed));

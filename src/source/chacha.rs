@@ -78,7 +78,7 @@ impl Clone for ChaCha8 {
 
 impl Debug for ChaCha8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("ChaCha8").field(&self.state).finish()
+        f.debug_tuple("ChaCha8").finish()
     }
 }
 
@@ -194,7 +194,7 @@ mod tests {
     fn no_leaking_debug() {
         let source = ChaCha8::with_seed([0u8; 40]);
 
-        assert_eq!(format!("{:?}", source), "ChaCha8(CellState)");
+        assert_eq!(format!("{:?}", source), "ChaCha8");
     }
 
     #[test]

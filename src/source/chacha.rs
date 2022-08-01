@@ -1,8 +1,4 @@
-use crate::{
-    buffer::EntropyBuffer,
-    entropy::generate_entropy,
-    Cell, Debug,
-};
+use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Cell, Debug};
 
 const INITIAL_STATE: &[u8; 16] = b"expand 32-byte k";
 
@@ -29,7 +25,7 @@ impl ChaCha8 {
 
     #[inline]
     fn generate(&self) -> [u8; 64] {
-        let mut new_state = calculate_block::<4>(self.state.get());
+        let new_state = calculate_block::<4>(self.state.get());
 
         let mut output = [0_u8; 64];
 
@@ -39,11 +35,10 @@ impl ChaCha8 {
             .zip(output.iter_mut())
             .for_each(|(val, slot)| *slot = val);
 
-        if increment_counter(&mut new_state) {
-            self.state.set(new_state);
-        } else {
-            self.reseed(generate_entropy::<40>());
-        }
+        increment_counter(new_state).map_or_else(
+            || self.reseed(generate_entropy::<40>()),
+            |updated_state| self.state.set(updated_state),
+        );
 
         output
     }
@@ -83,17 +78,14 @@ impl Debug for ChaCha8 {
 }
 
 #[inline]
-fn increment_counter(state: &mut [u32; 16]) -> bool {
+fn increment_counter(mut state: [u32; 16]) -> Option<[u32; 16]> {
     let counter = ((state[13] as u64) << 32) | (state[12] as u64);
 
-    match counter.checked_add(1) {
-        Some(updated_counter) => {
-            state[12] = (updated_counter & 0xFFFF_FFFF) as u32;
-            state[13] = ((updated_counter >> 32) & 0xFFFF_FFFF) as u32;
-            true
-        }
-        None => false,
-    }
+    counter.checked_add(1).map(|updated_counter| {
+        state[12] = (updated_counter & 0xFFFF_FFFF) as u32;
+        state[13] = ((updated_counter >> 32) & 0xFFFF_FFFF) as u32;
+        state
+    })
 }
 
 #[inline]

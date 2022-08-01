@@ -40,7 +40,7 @@
 //!
 //! # Features
 //!
-//! * `atomic` - Enables [`AtomicState`] variants & [`atomic_rng`] macros, so
+//! * `atomic` - Enables [`AtomicRng`] & [`atomic_rng`] macros, so
 //!   to provide a thread-safe variation of [`Rng`].
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
@@ -88,7 +88,7 @@ mod traits;
 use crate::source::wyrand::WyRand;
 pub use crate::{internal::*, rng::*, secure_rng::*, traits::*};
 
-/// Initialises an [`Rng`] instance with a [`CellState`]. Not thread safe.
+/// Initialises an [`Rng`] instance. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
@@ -123,7 +123,7 @@ macro_rules! rng {
     };
 }
 
-/// Initialises an [`Rng`] instance with an [`AtomicState`]. Thread safe.
+/// Initialises an [`AtomicRng`] instance. Thread safe.
 /// Can be used with and without a seed value. If invoked without
 /// a seed value, it will initialise a default instance with a generated
 /// seed.
@@ -139,7 +139,7 @@ macro_rules! rng {
 /// let value = rand.bool();
 /// ```
 ///
-/// Else, pass in a `u64` value to get an [`Rng`] instance with the seed
+/// Else, pass in a `u64` value to get an [`AtomicRng`] instance with the seed
 /// initialised to that value.
 ///
 /// ```
@@ -159,6 +159,41 @@ macro_rules! atomic_rng {
     };
     ($seed:expr) => {
         AtomicRng::with_seed($seed)
+    };
+}
+
+/// Initialises a [`SecureRng`] instance. Not thread safe.
+/// Can be used with and without a seed value. If invoked without
+/// a seed value, it will initialise a default instance with a generated
+/// seed.
+///
+/// # Example
+///
+/// ```
+/// use turborand::*;
+///
+/// let rand = secure_rng!();
+///
+/// let value = rand.bool();
+/// ```
+///
+/// Else, pass in a `u64` value to get an [`SecureRng`] instance with the seed
+/// initialised to that value.
+///
+/// ```
+/// use turborand::*;
+///
+/// let rand = secure_rng!([1u8; 40]);
+///
+/// let value = rand.bool();
+/// ```
+#[macro_export]
+macro_rules! secure_rng {
+    () => {
+        SecureRng::default()
+    };
+    ($seed:expr) => {
+        SecureRng::with_seed($seed)
     };
 }
 

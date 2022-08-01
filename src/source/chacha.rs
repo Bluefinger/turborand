@@ -90,6 +90,8 @@ fn increment_counter(mut state: [u32; 16]) -> Option<[u32; 16]> {
 
 #[inline]
 const fn pack_into_u32(input: &[u8]) -> u32 {
+    assert!(input.len() == 4);
+
     (input[0] as u32)
         | ((input[1] as u32) << 8)
         | ((input[2] as u32) << 16)

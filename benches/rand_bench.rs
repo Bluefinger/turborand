@@ -7,6 +7,17 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
         let rand = rng!();
         b.iter(|| black_box(rand.clone()))
     });
+    c.bench_function("CellRng fill_bytes", |b| {
+        let rand = rng!();
+
+        let data = [0u8; 24];
+
+        b.iter_batched(
+            || data,
+            |mut data| rand.fill_bytes(&mut data),
+            criterion::BatchSize::SmallInput,
+        )
+    });
     c.bench_function("CellRng gen_u128", |b| {
         let rand = rng!();
         b.iter(|| black_box(rand.gen_u128()));
@@ -80,6 +91,17 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
         let rand = atomic_rng!();
         b.iter(|| black_box(rand.clone()))
     });
+    c.bench_function("AtomicRng fill_bytes", |b| {
+        let rand = atomic_rng!();
+
+        let data = [0u8; 24];
+
+        b.iter_batched(
+            || data,
+            |mut data| rand.fill_bytes(&mut data),
+            criterion::BatchSize::SmallInput,
+        )
+    });
     c.bench_function("AtomicRng gen_u128", |b| {
         let rand = atomic_rng!();
         b.iter(|| black_box(rand.gen_u128()));
@@ -150,6 +172,10 @@ fn turborand_secure_benchmark(c: &mut Criterion) {
     c.bench_function("SecureRng new", |b| {
         b.iter(|| black_box(SecureRng::new()));
     });
+    c.bench_function("SecureRng clone", |b| {
+        let rand = secure_rng!();
+        b.iter(|| black_box(rand.clone()));
+    });
     c.bench_function("SecureRng gen_u64", |b| {
         let rand = SecureRng::new();
 
@@ -158,7 +184,7 @@ fn turborand_secure_benchmark(c: &mut Criterion) {
     c.bench_function("SecureRng fill_bytes", |b| {
         let rand = SecureRng::new();
 
-        let data = [0u8; 21];
+        let data = [0u8; 24];
 
         b.iter_batched(
             || data,

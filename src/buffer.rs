@@ -1,6 +1,6 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct EntropyBuffer<const SIZE: usize> {
-    buffer: Option<[u8; SIZE]>,
+    buffer: [u8; SIZE],
     cursor: usize,
 }
 
@@ -9,46 +9,36 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     #[must_use]
     pub(crate) const fn new() -> Self {
         Self {
-            buffer: None,
-            cursor: 0,
+            buffer: [0u8; SIZE],
+            cursor: SIZE,
         }
     }
 
     #[inline]
     fn is_empty(&self) -> bool {
-        if let Some(buffer) = self.buffer {
-            buffer.len() == self.cursor
-        } else {
-            true
-        }
+        self.buffer.len() == self.cursor
     }
 
     #[inline]
     fn remaining_buffer(&self) -> usize {
-        if let Some(buffer) = self.buffer {
-            buffer.len() - self.cursor
-        } else {
-            0
-        }
+        self.buffer.len() - self.cursor
     }
 
     #[inline]
     fn reset_buffer(&mut self, buffer: [u8; SIZE]) {
-        self.buffer = Some(buffer);
+        self.buffer = buffer;
         self.cursor = 0;
     }
 
     #[inline]
-    fn fill(&mut self, output: &mut [u8]) -> Option<usize> {
-        self.buffer.map(|buffer| {
-            let length = output.len().min(self.remaining_buffer());
+    fn fill(&mut self, output: &mut [u8]) -> usize {
+        let length = output.len().min(self.remaining_buffer());
 
-            output[..length].copy_from_slice(&buffer[self.cursor..(self.cursor + length)]);
+        output[..length].copy_from_slice(&self.buffer[self.cursor..(self.cursor + length)]);
 
-            self.cursor += length;
+        self.cursor += length;
 
-            length
-        })
+        length
     }
 
     #[inline]
@@ -59,16 +49,13 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     ) {
         let mut output = output.as_mut();
         let mut remaining = output.len();
-        
+
         while remaining > 0 {
             if self.is_empty() {
                 self.reset_buffer(source());
             }
 
-            // Unwrap here is fine, because we check before whether
-            // the buffer is empty and refill it, so here will always
-            // return Some(usize).
-            let filled = self.fill(output).unwrap();
+            let filled = self.fill(output);
 
             output = &mut output[filled..];
 
@@ -105,7 +92,7 @@ mod tests {
 
         let mut output = [0u8; 4];
 
-        let filled = buffer.fill(&mut output).unwrap();
+        let filled = buffer.fill(&mut output);
 
         assert_eq!(&output, &[1, 2, 3, 4]);
         assert_eq!(&filled, &4);
@@ -114,7 +101,7 @@ mod tests {
 
         let mut output = [0u8; 6];
 
-        let filled = buffer.fill(&mut output).unwrap();
+        let filled = buffer.fill(&mut output);
 
         assert_eq!(&output, &[5, 6, 7, 8, 0, 0]);
         assert_eq!(&filled, &4);
@@ -125,7 +112,7 @@ mod tests {
 
         assert!(!buffer.is_empty());
 
-        let filled = buffer.fill(&mut output[filled..]).unwrap();
+        let filled = buffer.fill(&mut output[filled..]);
 
         assert_eq!(&output, &[5, 6, 7, 8, 1, 2]);
         assert_eq!(&filled, &2);

@@ -44,6 +44,11 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     }
 
     #[inline]
+    pub(crate) fn empty_buffer(&mut self) {
+        self.cursor = SIZE;
+    }
+
+    #[inline]
     pub(crate) fn fill_bytes_with_source<B: AsMut<[u8]>, S: Fn() -> [u8; SIZE]>(
         &mut self,
         mut output: B,

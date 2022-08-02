@@ -22,13 +22,21 @@ impl ChaCha8 {
     #[inline]
     pub(crate) fn reseed(&self, seed: [u8; 40]) {
         let state = init_state(seed);
+        // SAFETY: Pointers are kept here only for as long as the write happens,
+        // with the array of data not needing to be dropped and instead it being
+        // fine for being overwritten, and the mutable reference only lasts long
+        // enough to call a single method to reset EntropyBuffer's state to being
+        // empty.
         unsafe {
             self.state.get().write(state);
+            (&mut *self.cache.get()).empty_buffer();
         }
     }
 
     #[inline]
     fn generate(&self) -> [u8; 64] {
+        // SAFETY: Pointer is kept here only for as long as the read happens. The memory
+        // being read will always be initialised, therefore this is safe.
         let new_state = unsafe { calculate_block::<4>(self.state.get().read()) };
 
         let mut output = [0_u8; 64];
@@ -41,6 +49,9 @@ impl ChaCha8 {
 
         increment_counter(new_state).map_or_else(
             || self.reseed(generate_entropy::<40>()),
+            // SAFETY: Pointer is kept here only for as long as the write happens,
+            // with the array of data not needing to be dropped and instead it being
+            // fine for being overwritten.
             |updated_state| unsafe {
                 self.state.get().write(updated_state);
             },
@@ -60,6 +71,9 @@ impl ChaCha8 {
 
     #[inline]
     pub(crate) fn fill<B: AsMut<[u8]>>(&self, buffer: B) {
+        // SAFETY: This is the only place where a mutable reference is created
+        // for accessing EntropyBuffer, and the reference drops out of scope once
+        // the method has finished filling the buffer.
         let cache = unsafe { &mut *self.cache.get() };
 
         cache.fill_bytes_with_source(buffer, || self.generate());
@@ -83,13 +97,18 @@ impl Debug for ChaCha8 {
 
 impl PartialEq for ChaCha8 {
     fn eq(&self, other: &Self) -> bool {
-        let state = unsafe { &*self.state.get() };
-        let cache = unsafe { &*self.cache.get() };
+        // SAFETY: All values being read here are always initialised and are
+        // not being mutated nor are there existing mutable references, therefore
+        // it is safe to cast to immutable references.
+        unsafe {
+            let state = &*self.state.get();
+            let cache = &*self.cache.get();
 
-        let other_state = unsafe { &*other.state.get() };
-        let other_cache = unsafe { &*other.cache.get() };
+            let other_state = &*other.state.get();
+            let other_cache = &*other.cache.get();
 
-        state == other_state && cache == other_cache
+            state == other_state && cache == other_cache
+        }
     }
 }
 
@@ -223,6 +242,19 @@ mod tests {
         source2.generate();
 
         assert_ne!(source, source2);
+    }
+
+    #[test]
+    fn reseed() {
+        let source = ChaCha8::with_seed([0u8; 40]);
+
+        let value1 = source.rand::<4>();
+
+        source.reseed([0u8; 40]);
+
+        let value2 = source.rand::<4>();
+
+        assert_eq!(value1, value2);
     }
 
     #[test]

@@ -10,7 +10,7 @@ use crate::{Deserialize, Serialize};
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub(crate) struct WyRand<S: Debug + State = CellState<u64>>
+pub(crate) struct WyRand<S: Debug + State = CellState>
 where
     S: State<Seed = u64>,
 {
@@ -90,14 +90,14 @@ mod tests {
 
     #[test]
     fn seed() {
-        let rng = WyRand::<CellState<u64>>::with_seed(Default::default());
+        let rng = WyRand::<CellState>::with_seed(Default::default());
 
         assert_eq!(rng.state.get(), 0);
     }
 
     #[test]
     fn reseed() {
-        let rng = WyRand::<CellState<u64>>::with_seed(Default::default());
+        let rng = WyRand::<CellState>::with_seed(Default::default());
 
         rng.reseed(5);
 
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn rand() {
-        let rng = WyRand::<CellState<u64>>::with_seed(1);
+        let rng = WyRand::<CellState>::with_seed(1);
 
         let output = rng.rand();
 
@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn clone() {
-        let rng1 = WyRand::<CellState<u64>>::with_seed(1);
-        let rng2 = WyRand::<CellState<u64>>::with_seed(1);
+        let rng1 = WyRand::<CellState>::with_seed(1);
+        let rng2 = WyRand::<CellState>::with_seed(1);
 
         let cloned1 = rng1.clone();
         let cloned2 = rng2.clone();
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn no_leaking_debug() {
-        let rng = WyRand::<CellState<u64>>::with_seed(Default::default());
+        let rng = WyRand::<CellState>::with_seed(Default::default());
 
         assert_eq!(format!("{:?}", rng), "WyRand(CellState)");
     }

@@ -1,31 +1,35 @@
-use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Cell, Debug};
+use std::cell::UnsafeCell;
+
+use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Debug};
 
 const INITIAL_STATE: &[u8; 16] = b"expand 32-byte k";
 
 /// A ChaCha8 based Random Number Generator
-#[derive(PartialEq, Eq)]
 pub(crate) struct ChaCha8 {
-    state: Cell<[u32; 16]>,
-    cache: Cell<EntropyBuffer<64>>,
+    state: UnsafeCell<[u32; 16]>,
+    cache: UnsafeCell<EntropyBuffer<64>>,
 }
 
 impl ChaCha8 {
     #[inline]
     pub(crate) fn with_seed(seed: [u8; 40]) -> Self {
         Self {
-            state: Cell::new(init_state(seed)),
-            cache: Cell::new(EntropyBuffer::<64>::new()),
+            state: UnsafeCell::new(init_state(seed)),
+            cache: UnsafeCell::new(EntropyBuffer::<64>::new()),
         }
     }
 
     #[inline]
     pub(crate) fn reseed(&self, seed: [u8; 40]) {
-        self.state.set(init_state(seed));
+        let state = init_state(seed);
+        unsafe {
+            self.state.get().write(state);
+        }
     }
 
     #[inline]
     fn generate(&self) -> [u8; 64] {
-        let new_state = calculate_block::<4>(self.state.get());
+        let new_state = unsafe { calculate_block::<4>(self.state.get().read()) };
 
         let mut output = [0_u8; 64];
 
@@ -37,7 +41,9 @@ impl ChaCha8 {
 
         increment_counter(new_state).map_or_else(
             || self.reseed(generate_entropy::<40>()),
-            |updated_state| self.state.set(updated_state),
+            |updated_state| unsafe {
+                self.state.get().write(updated_state);
+            },
         );
 
         output
@@ -54,19 +60,17 @@ impl ChaCha8 {
 
     #[inline]
     pub(crate) fn fill<B: AsMut<[u8]>>(&self, buffer: B) {
-        let mut cache = self.cache.get();
+        let cache = unsafe { &mut *self.cache.get() };
 
         cache.fill_bytes_with_source(buffer, || self.generate());
-
-        self.cache.set(cache);
     }
 }
 
 impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: Cell::new(init_state(self.rand::<40>())),
-            cache: Cell::new(EntropyBuffer::<64>::new()),
+            state: UnsafeCell::new(init_state(self.rand::<40>())),
+            cache: UnsafeCell::new(EntropyBuffer::<64>::new()),
         }
     }
 }
@@ -76,6 +80,20 @@ impl Debug for ChaCha8 {
         f.debug_tuple("ChaCha8").finish()
     }
 }
+
+impl PartialEq for ChaCha8 {
+    fn eq(&self, other: &Self) -> bool {
+        let state = unsafe { &*self.state.get() };
+        let cache = unsafe { &*self.cache.get() };
+
+        let other_state = unsafe { &*other.state.get() };
+        let other_cache = unsafe { &*other.cache.get() };
+
+        state == other_state && cache == other_cache
+    }
+}
+
+impl Eq for ChaCha8 {}
 
 #[inline]
 fn increment_counter(mut state: [u32; 16]) -> Option<[u32; 16]> {
@@ -189,6 +207,22 @@ mod tests {
         let source = ChaCha8::with_seed([0u8; 40]);
 
         assert_eq!(format!("{:?}", source), "ChaCha8");
+    }
+
+    #[test]
+    fn equality_check() {
+        let source = ChaCha8::with_seed([0u8; 40]);
+        let source2 = ChaCha8::with_seed([0u8; 40]);
+
+        assert_eq!(source, source2);
+
+        source.rand::<10>();
+
+        assert_ne!(source, source2);
+
+        source2.generate();
+
+        assert_ne!(source, source2);
     }
 
     #[test]

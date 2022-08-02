@@ -16,12 +16,12 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
 
     #[inline]
     fn is_empty(&self) -> bool {
-        self.buffer.len() == self.cursor
+        SIZE == self.cursor
     }
 
     #[inline]
     fn remaining_buffer(&self) -> usize {
-        self.buffer.len() - self.cursor
+        SIZE - self.cursor
     }
 
     #[inline]
@@ -34,9 +34,11 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     fn fill(&mut self, output: &mut [u8]) -> usize {
         let length = output.len().min(self.remaining_buffer());
 
-        output[..length].copy_from_slice(&self.buffer[self.cursor..(self.cursor + length)]);
+        let to = self.cursor + length;
 
-        self.cursor += length;
+        output[..length].copy_from_slice(&self.buffer[self.cursor..to]);
+
+        self.cursor = to;
 
         length
     }

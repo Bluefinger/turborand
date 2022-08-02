@@ -30,28 +30,28 @@ pub trait State: Sized {
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct CellState<S: Copy + Default>(Cell<S>);
+pub struct CellState(Cell<u64>);
 
-impl<S: Copy + Default> State for CellState<S> {
-    type Seed = S;
+impl State for CellState {
+    type Seed = u64;
 
     #[inline]
-    fn with_seed(seed: S) -> Self {
+    fn with_seed(seed: Self::Seed) -> Self {
         Self(Cell::new(seed))
     }
 
     #[inline]
-    fn get(&self) -> S {
+    fn get(&self) -> Self::Seed {
         self.0.get()
     }
 
     #[inline]
-    fn set(&self, value: S) {
+    fn set(&self, value: Self::Seed) {
         self.0.set(value);
     }
 }
 
-impl<S: Copy + Default> Debug for CellState<S> {
+impl Debug for CellState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("CellState").finish()
     }
@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn cell_state_no_leaking_debug() {
-        let state = CellState::<u64>::with_seed(Default::default());
+        let state = CellState::with_seed(Default::default());
 
         assert_eq!(format!("{state:?}"), "CellState");
     }

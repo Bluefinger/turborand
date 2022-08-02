@@ -12,7 +12,7 @@ use crate::{Deserialize, Serialize};
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Rng(WyRand<CellState<u64>>);
+pub struct Rng(WyRand<CellState>);
 
 impl Rng {
     /// Creates a new [`Rng`] with a randomised seed.

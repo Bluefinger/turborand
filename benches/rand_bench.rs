@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_main, Criterion};
 use turborand::*;
 
 fn turborand_cell_benchmark(c: &mut Criterion) {
@@ -168,6 +168,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     });
 }
 
+#[cfg(feature = "secure")]
 fn turborand_secure_benchmark(c: &mut Criterion) {
     c.bench_function("SecureRng new", |b| {
         b.iter(|| black_box(secure_rng!()));
@@ -254,10 +255,13 @@ fn turborand_secure_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(
-    benches,
-    turborand_cell_benchmark,
-    turborand_atomic_benchmark,
-    turborand_secure_benchmark
-);
+pub fn benches() {
+    let mut criterion: Criterion<_> = Criterion::default().configure_from_args();
+    turborand_cell_benchmark(&mut criterion);
+    #[cfg(feature = "atomic")]
+    turborand_atomic_benchmark(&mut criterion);
+    #[cfg(feature = "secure")]
+    turborand_secure_benchmark(&mut criterion);
+}
+
 criterion_main!(benches);

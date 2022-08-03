@@ -48,6 +48,9 @@
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
 //! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`].
+//! * `secure` - Enables [`SecureRng`] for providing a more cryptographically
+//!   secure source of Rng. Note, this will be slower than [`Rng`] in
+//!   throughput, but will produce much higher quality randomness.
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
@@ -80,16 +83,21 @@ use serde::{Deserialize, Serialize};
 #[macro_use]
 mod methods;
 
+#[cfg(feature = "secure")]
 mod buffer;
 mod entropy;
 mod internal;
 mod rng;
+#[cfg(feature = "secure")]
 mod secure_rng;
 mod source;
 mod traits;
 
 use crate::source::wyrand::WyRand;
-pub use crate::{internal::*, rng::*, secure_rng::*, traits::*};
+pub use crate::{internal::*, rng::*, traits::*};
+
+#[cfg(feature = "secure")]
+pub use crate::secure_rng::*;
 
 /// Initialises an [`Rng`] instance. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
@@ -190,6 +198,8 @@ macro_rules! atomic_rng {
 ///
 /// let value = rand.bool();
 /// ```
+#[cfg(feature = "secure")]
+#[cfg_attr(docsrs, doc(cfg(feature = "secure")))]
 #[macro_export]
 macro_rules! secure_rng {
     () => {

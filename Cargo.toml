@@ -32,6 +32,7 @@ harness = false
 
 [features]
 atomic = []
+secure = []
 rand = ["dep:rand_core"]
 serialize = ["dep:serde"]
 

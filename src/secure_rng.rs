@@ -5,6 +5,7 @@ use crate::{
 
 /// A Random Number generator, powered by the `ChaCha8` algorithm.
 #[derive(PartialEq, Eq)]
+#[cfg_attr(docsrs, doc(cfg(feature = "secure")))]
 #[repr(transparent)]
 pub struct SecureRng(ChaCha8);
 

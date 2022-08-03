@@ -1,12 +1,12 @@
 [package]
 name = "turborand"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Gonçalo Rica Pais da Silva <bluefinger@gmail.com>"]
-description = "A simple and fast random number generator"
+description = "Fast random number generators"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Bluefinger/turborand"
-keywords = ["fast", "rand", "random", "wyrand"]
+keywords = ["fast", "rand", "random", "wyrand", "chacha"]
 categories = ["algorithms"]
 exclude = ["/.*"]
 resolver = "2"
@@ -32,6 +32,7 @@ harness = false
 
 [features]
 atomic = []
+secure = []
 rand = ["dep:rand_core"]
 serialize = ["dep:serde"]
 

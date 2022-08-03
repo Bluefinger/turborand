@@ -5,10 +5,12 @@
 [![Cargo](https://img.shields.io/crates/v/turborand.svg)](https://crates.io/crates/turborand)
 [![Documentation](https://docs.rs/turborand/badge.svg)](https://docs.rs/turborand)
 
-A fast random number generator.
+Fast random number generators.
 
-`turborand`'s internal implementation uses [Wyrand](https://github.com/wangyi-fudan/wyhash), a simple and fast
-generator but **not** cryptographically secure.
+`turborand`'s internal implementations use [Wyrand](https://github.com/wangyi-fudan/wyhash), a simple and fast
+generator but **not** cryptographically secure, and also [ChaCha8](https://cr.yp.to/chacha.html), a cryptographically
+secure generator tuned to 8 rounds of the ChaCha algorithm in order to increase throughput considerably without sacrificing
+too much security, as per the recommendations set out in the [Too Much Crypto](https://eprint.iacr.org/2019/1492.pdf) paper.
 
 ## Examples
 

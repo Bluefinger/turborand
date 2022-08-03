@@ -34,5 +34,17 @@ jobs:
         run: cargo check -Z features=dev_dep
       - run: cargo test --all-features
       - name: Test wasm
-        run: wasm-pack test --headless --chrome --firefox
+        run: wasm-pack test --headless --chrome --firefox -- --features secure,atomic,rand
         if: startsWith(matrix.os, 'ubuntu')
+  miri:
+    name: "Miri"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --component miri
+          rustup override set nightly
+          cargo miri setup
+      - name: Test with Miri
+        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test --features atomic,secure,rand

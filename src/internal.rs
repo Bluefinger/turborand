@@ -6,21 +6,23 @@ use crate::{AtomicU64, Ordering};
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
 
-/// Trait for implementing [`State`] to be used in a `Rng`.
+/// Trait for implementing [`State`] to be used in `WyRand`.
 ///
 /// Those implementing [`State`] should also ensure to implement
 /// a custom [`Debug`] formatter on the structs in order to prevent
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
-pub trait State {
+pub trait State: Sized {
+    /// Seed Associated Type, must be `Sized` and `Default`.
+    type Seed: Sized + Default;
     /// Initialise a state with a seed value.
-    fn with_seed(seed: u64) -> Self
+    fn with_seed(seed: Self::Seed) -> Self
     where
         Self: Sized;
     /// Return the current state.
-    fn get(&self) -> u64;
+    fn get(&self) -> Self::Seed;
     /// Set the state with a new value.
-    fn set(&self, value: u64);
+    fn set(&self, value: Self::Seed);
 }
 
 /// Non-[`Send`] and [`Sync`] state for `Rng`. Stores the current
@@ -31,21 +33,20 @@ pub trait State {
 pub struct CellState(Cell<u64>);
 
 impl State for CellState {
+    type Seed = u64;
+
     #[inline]
-    fn with_seed(seed: u64) -> Self
-    where
-        Self: Sized,
-    {
+    fn with_seed(seed: Self::Seed) -> Self {
         Self(Cell::new(seed))
     }
 
     #[inline]
-    fn get(&self) -> u64 {
+    fn get(&self) -> Self::Seed {
         self.0.get()
     }
 
     #[inline]
-    fn set(&self, value: u64) {
+    fn set(&self, value: Self::Seed) {
         self.0.set(value);
     }
 }
@@ -56,7 +57,7 @@ impl Debug for CellState {
     }
 }
 
-/// [`Send`] and [`Sync`] state for `Rng`. Stores the current
+/// [`Send`] and [`Sync`] state for `AtomicRng`. Stores the current
 /// state of the PRNG in a [`AtomicU64`].
 ///
 /// ```
@@ -64,7 +65,7 @@ impl Debug for CellState {
 /// use std::sync::Arc;
 /// use std::thread;
 ///
-/// let rand = Arc::new(atomic_rng!()); // Will not compile with `CellState`
+/// let rand = Arc::new(atomic_rng!()); // Will not compile with `Rng`
 /// let rand2 = rand.clone();
 ///
 /// let thread_01 = thread::spawn(move || {
@@ -79,13 +80,13 @@ impl Debug for CellState {
 /// let res2 = thread_02.join();
 /// ```
 #[cfg(feature = "atomic")]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
 #[repr(transparent)]
 pub struct AtomicState(AtomicU64);
 
 #[cfg(feature = "atomic")]
 impl State for AtomicState {
+    type Seed = u64;
     #[inline]
     fn with_seed(seed: u64) -> Self
     where
@@ -96,12 +97,12 @@ impl State for AtomicState {
 
     #[inline]
     fn get(&self) -> u64 {
-        self.0.load(Ordering::Relaxed)
+        self.0.load(Ordering::SeqCst)
     }
 
     #[inline]
     fn set(&self, value: u64) {
-        self.0.store(value, Ordering::Relaxed);
+        self.0.store(value, Ordering::SeqCst);
     }
 }
 

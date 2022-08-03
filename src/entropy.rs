@@ -9,7 +9,7 @@ pub(crate) fn generate_entropy<const SIZE: usize>() -> [u8; SIZE] {
     thread::current().id().hash(&mut hasher);
 
     let mut bytes = [0u8; SIZE];
-    let mut length = bytes.len();
+    let mut length = SIZE;
 
     let mut buffer = bytes.as_mut();
 

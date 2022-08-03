@@ -177,7 +177,7 @@ fn unsigned_range_spread_test() {
 
     assert_eq!(
         actual_histogram, expected_histogram,
-        "signed samples should match in frequency to the expected histogram"
+        "unsigned samples should match in frequency to the expected histogram"
     );
 }
 
@@ -343,6 +343,95 @@ fn fill_bytes_smoke_testing() {
         &bytes,
         &[231, 75, 181, 137, 136, 142, 198, 200, 185, 42, 12, 175],
         "vec bytes should match expected output"
+    );
+}
+
+#[cfg(feature = "secure")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn secure_rng_smoke_test() {
+    let rand = SecureRng::with_seed([0u8; 40]);
+
+    let value = rand.u64(5..=10);
+
+    assert_eq!(&value, &10);
+
+    for _ in 0..128 {
+        let value = rand.u64(2..=20);
+
+        assert!((2..=20).contains(&value));
+    }
+
+    let value = rand.i64(-5..=5);
+
+    assert_eq!(&value, &-2);
+
+    for _ in 0..128 {
+        let value = rand.i64(-8..=8);
+
+        assert!((-8..=8).contains(&value));
+    }
+}
+
+#[cfg(feature = "secure")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn secure_rng_spread_test() {
+    let rng = SecureRng::with_seed([0u8; 40]);
+
+    let actual_histogram: BTreeMap<u32, u32> =
+        repeat_with(|| rng.u32(1..=10))
+            .take(1000)
+            .fold(BTreeMap::new(), |mut histogram, key| {
+                *histogram.entry(key).or_default() += 1;
+
+                histogram
+            });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (1, 101),
+        (2, 86),
+        (3, 99),
+        (4, 103),
+        (5, 88),
+        (6, 91),
+        (7, 109),
+        (8, 103),
+        (9, 111),
+        (10, 109),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
+    );
+
+    let actual_histogram: BTreeMap<i32, i32> =
+        repeat_with(|| rng.i32(-5..=5))
+            .take(1000)
+            .fold(BTreeMap::new(), |mut histogram, key| {
+                *histogram.entry(key).or_default() += 1;
+
+                histogram
+            });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (-5, 99),
+        (-4, 88),
+        (-3, 93),
+        (-2, 77),
+        (-1, 93),
+        (0, 104),
+        (1, 77),
+        (2, 73),
+        (3, 111),
+        (4, 97),
+        (5, 88),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
     );
 }
 

@@ -1,7 +1,10 @@
-//! A simple and fast random number generator.
+//! Fast random number generators.
 //!
-//! The implementation uses [Wyrand](https://github.com/wangyi-fudan/wyhash), a simple and fast
-//! generator but **not** cryptographically secure.
+//! The implementations use [Wyrand](https://github.com/wangyi-fudan/wyhash), a simple and fast
+//! generator but **not** cryptographically secure, and [ChaCha8](https://cr.yp.to/chacha.html),
+//! a cryptographically secure generator tuned to 8 rounds of the ChaCha algorithm in order to
+//! increase throughput considerably without sacrificing too much security, as per the
+//! recommendations set out in the [Too Much Crypto](https://eprint.iacr.org/2019/1492.pdf) paper.
 //!
 //! # Examples
 //!
@@ -42,7 +45,7 @@
 //!
 //! * `atomic` - Enables [`AtomicRng`] & [`atomic_rng`] macros, so
 //!   to provide a thread-safe variation of [`Rng`].
-//! * `rand` - Provides [`RandCompat`], which implements [`RngCore`] and [`SeedableRng`]
+//! * `rand` - Provides [`RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
 //! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`].
 #![warn(missing_docs, rust_2018_idioms)]

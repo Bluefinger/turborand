@@ -1,26 +1,40 @@
 use crate::{thread, DefaultHasher, Hash, Hasher, Instant};
 
-/// Generates a random buffer from some quick sources
-/// of entropy. Always a non-zero being returned.
+use getrandom::{getrandom, Error};
+
+/// This is a fallback in case other sources are not available. It is not meant
+/// to be super secure, but to provide at least something in case of absolute
+/// failure.
 #[inline]
-pub(crate) fn generate_entropy<const SIZE: usize>() -> [u8; SIZE] {
+fn fallback_entropy<B: AsMut<[u8]>>(mut buffer: B) -> Result<(), Error> {
     let mut hasher = DefaultHasher::new();
     Instant::now().hash(&mut hasher);
     thread::current().id().hash(&mut hasher);
 
-    let mut bytes = [0u8; SIZE];
-    let mut length = SIZE;
+    let mut buffer = buffer.as_mut();
+    let mut remaining = buffer.len();
 
-    let mut buffer = bytes.as_mut();
-
-    while length > 0 {
-        length.hash(&mut hasher);
+    while remaining > 0 {
+        remaining.hash(&mut hasher);
         let output = hasher.finish().to_ne_bytes();
-        let fill = output.len().min(length);
+        let fill = output.len().min(remaining);
         buffer[..fill].copy_from_slice(&output[..fill]);
         buffer = &mut buffer[fill..];
-        length -= fill;
+        remaining -= fill;
     }
+
+    Ok(())
+}
+
+/// Generates a random buffer from some OS/Hardware sources
+/// of entropy. Fallback provided in case OS/Hardware sources fail.
+#[inline]
+pub(crate) fn generate_entropy<const SIZE: usize>() -> [u8; SIZE] {
+    let mut bytes = [0u8; SIZE];
+
+    getrandom(&mut bytes)
+        .or_else(|_| fallback_entropy(&mut bytes))
+        .expect("Entropy sources should be available and not fail in order to sample random data");
 
     bytes
 }

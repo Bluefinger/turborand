@@ -227,7 +227,7 @@ impl<T: TurboCore + Default> RandCompat<T> {
     /// use turborand::*;
     /// use rand_core::RngCore;
     ///
-    /// let mut rng = RandCompat::<SecureRng>::new();
+    /// let mut rng = RandCompat::<Rng>::new();
     /// let mut buffer = [0u8; 32];
     ///
     /// rng.fill_bytes(&mut buffer);
@@ -251,8 +251,8 @@ impl<T: TurboCore + Default> Default for RandCompat<T> {
     /// use turborand::*;
     /// use rand_core::RngCore;
     ///
-    /// let mut rng1 = RandCompat::<SecureRng>::default();
-    /// let mut rng2 = RandCompat::<SecureRng>::default();
+    /// let mut rng1 = RandCompat::<Rng>::default();
+    /// let mut rng2 = RandCompat::<Rng>::default();
     ///
     /// assert_ne!(rng1.next_u64(), rng2.next_u64());
     /// ```
@@ -310,7 +310,7 @@ impl From<RandCompat<AtomicRng>> for AtomicRng {
     }
 }
 
-#[cfg(feature = "rand")]
+#[cfg(all(feature = "rand", feature = "secure"))]
 impl From<RandCompat<SecureRng>> for SecureRng {
     #[inline]
     fn from(rand: RandCompat<SecureRng>) -> Self {

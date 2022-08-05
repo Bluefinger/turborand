@@ -217,7 +217,7 @@ mod tests {
     fn rand_compatibility() {
         use rand_core::RngCore;
 
-        use crate::RandCompat;
+        use crate::{RandCompat, RandBorrowed};
 
         fn get_rand_num<R: RngCore>(rng: &mut R) -> u64 {
             rng.next_u64()
@@ -226,6 +226,18 @@ mod tests {
         let rng = rng!(Default::default());
 
         let mut rand = RandCompat::from(rng);
+
+        let result = get_rand_num(&mut rand);
+
+        assert_eq!(
+            result, 14_839_104_130_206_199_084,
+            "Should receive expect random u64 output, got {} instead",
+            result
+        );
+
+        let mut rng = rng!(Default::default());
+
+        let mut rand = RandBorrowed::from(&mut rng);
 
         let result = get_rand_num(&mut rand);
 

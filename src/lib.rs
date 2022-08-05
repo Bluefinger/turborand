@@ -83,6 +83,8 @@ use serde::{Deserialize, Serialize};
 #[macro_use]
 mod methods;
 
+#[cfg(feature = "rand")]
+mod compatibility;
 #[cfg(feature = "secure")]
 mod buffer;
 mod entropy;
@@ -98,6 +100,9 @@ pub use crate::{internal::*, rng::*, traits::*};
 
 #[cfg(feature = "secure")]
 pub use crate::secure_rng::*;
+
+#[cfg(feature = "rand")]
+pub use crate::compatibility::*;
 
 /// Initialises an [`Rng`] instance. Not thread safe.
 /// Can be used with and without a seed value. If invoked without
@@ -208,112 +213,4 @@ macro_rules! secure_rng {
     ($seed:expr) => {
         SecureRng::with_seed($seed)
     };
-}
-
-/// A wrapper struct around [`TurboCore`] to allow implementing
-/// [`RngCore`] trait in a compatible manner.
-#[cfg(feature = "rand")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-#[derive(PartialEq, Eq)]
-#[repr(transparent)]
-pub struct RandCompat<T: TurboCore + Default>(T);
-
-#[cfg(feature = "rand")]
-impl<T: TurboCore + Default> RandCompat<T> {
-    /// Creates a new [`RandCompat`] with a randomised seed.
-    ///
-    /// # Example
-    /// ```
-    /// use turborand::*;
-    /// use rand_core::RngCore;
-    ///
-    /// let mut rng = RandCompat::<Rng>::new();
-    /// let mut buffer = [0u8; 32];
-    ///
-    /// rng.fill_bytes(&mut buffer);
-    ///
-    /// assert_ne!(&buffer, &[0u8; 32]);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn new() -> Self {
-        Self(T::default())
-    }
-}
-
-#[cfg(feature = "rand")]
-impl<T: TurboCore + Default> Default for RandCompat<T> {
-    /// Initialises a default instance of [`RandCompat`]. Warning, the default is
-    /// seeded with a randomly generated state, so this is **not** deterministic.
-    ///
-    /// # Example
-    /// ```
-    /// use turborand::*;
-    /// use rand_core::RngCore;
-    ///
-    /// let mut rng1 = RandCompat::<Rng>::default();
-    /// let mut rng2 = RandCompat::<Rng>::default();
-    ///
-    /// assert_ne!(rng1.next_u64(), rng2.next_u64());
-    /// ```
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[cfg(feature = "rand")]
-impl<T: TurboCore + Default> RngCore for RandCompat<T> {
-    #[inline]
-    fn next_u32(&mut self) -> u32 {
-        self.0.gen_u32()
-    }
-
-    #[inline]
-    fn next_u64(&mut self) -> u64 {
-        self.0.gen_u64()
-    }
-
-    #[inline]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest);
-    }
-
-    #[inline]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.0.fill_bytes(dest);
-        Ok(())
-    }
-}
-
-#[cfg(feature = "rand")]
-impl<T: TurboCore + Default> From<T> for RandCompat<T> {
-    #[inline]
-    fn from(rng: T) -> Self {
-        Self(rng)
-    }
-}
-
-#[cfg(feature = "rand")]
-impl From<RandCompat<Rng>> for Rng {
-    #[inline]
-    fn from(rand: RandCompat<Rng>) -> Self {
-        rand.0
-    }
-}
-
-#[cfg(all(feature = "rand", feature = "atomic"))]
-impl From<RandCompat<AtomicRng>> for AtomicRng {
-    #[inline]
-    fn from(rand: RandCompat<AtomicRng>) -> Self {
-        rand.0
-    }
-}
-
-#[cfg(all(feature = "rand", feature = "secure"))]
-impl From<RandCompat<SecureRng>> for SecureRng {
-    #[inline]
-    fn from(rand: RandCompat<SecureRng>) -> Self {
-        rand.0
-    }
 }

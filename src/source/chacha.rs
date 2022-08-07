@@ -39,18 +39,12 @@ impl ChaCha8 {
     }
 
     #[inline]
-    fn generate(&self) -> [u8; 64] {
+    fn generate(&self) -> [u32; 16] {
         // SAFETY: Pointer is kept here only for as long as the read happens. The memory
         // being read will always be initialised, therefore this is safe.
         let new_state = unsafe { calculate_block::<4>(self.state.get().read()) };
 
-        let mut output = [0_u8; 64];
-
-        new_state
-            .iter()
-            .flat_map(|num| num.to_ne_bytes())
-            .zip(output.iter_mut())
-            .for_each(|(val, slot)| *slot = val);
+        let output = new_state;
 
         increment_counter(new_state).map_or_else(
             || {
@@ -140,7 +134,7 @@ mod tests {
                 let source = ChaCha8::with_seed($seed);
 
                 let expected_output: [u8; 64] = $output1;
-                let output = source.generate();
+                let output = source.rand::<64>();
 
                 assert_eq!(&output, &expected_output);
             }

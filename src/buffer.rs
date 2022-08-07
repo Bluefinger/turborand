@@ -1,6 +1,6 @@
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub(crate) struct EntropyBuffer<const SIZE: usize> {
-    buffer: [u8; SIZE],
+    buffer: Vec<u8>,
     cursor: usize,
 }
 
@@ -9,7 +9,7 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     #[must_use]
     pub(crate) const fn new() -> Self {
         Self {
-            buffer: [0u8; SIZE],
+            buffer: Vec::new(),
             cursor: SIZE,
         }
     }
@@ -25,8 +25,20 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     }
 
     #[inline]
-    fn reset_buffer(&mut self, buffer: [u8; SIZE]) {
-        self.buffer = buffer;
+    fn reset_buffer<B: AsRef<[u32]>>(&mut self, buffer: B) {
+        let buffer: &[u8] = bytemuck::cast_slice(buffer.as_ref());
+
+        assert!(buffer.len() == SIZE);
+
+        if self.buffer.is_empty() {
+            self.buffer.extend(buffer);
+        } else {
+            self.buffer
+                .iter_mut()
+                .zip(buffer)
+                .for_each(|(slot, &val)| *slot = val);
+        }
+
         self.cursor = 0;
     }
 
@@ -45,11 +57,12 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
 
     #[inline]
     pub(crate) fn empty_buffer(&mut self) {
+        self.buffer.clear();
         self.cursor = SIZE;
     }
 
     #[inline]
-    pub(crate) fn fill_bytes_with_source<B: AsMut<[u8]>, S: Fn() -> [u8; SIZE]>(
+    pub(crate) fn fill_bytes_with_source<B: AsMut<[u8]>, R: AsRef<[u32]>, S: Fn() -> R>(
         &mut self,
         mut output: B,
         source: S,
@@ -93,7 +106,7 @@ mod tests {
     fn fills_byte_slices() {
         let mut buffer = EntropyBuffer::<8>::new();
 
-        buffer.reset_buffer([1, 2, 3, 4, 5, 6, 7, 8]);
+        buffer.reset_buffer([1, 2]);
 
         assert!(!buffer.is_empty());
 
@@ -101,7 +114,7 @@ mod tests {
 
         let filled = buffer.fill(&mut output);
 
-        assert_eq!(&output, &[1, 2, 3, 4]);
+        assert_eq!(&output, &[1, 0, 0, 0]);
         assert_eq!(&filled, &4);
         assert_eq!(&buffer.cursor, &4);
         assert!(!buffer.is_empty());
@@ -110,18 +123,18 @@ mod tests {
 
         let filled = buffer.fill(&mut output);
 
-        assert_eq!(&output, &[5, 6, 7, 8, 0, 0]);
+        assert_eq!(&output, &[2, 0, 0, 0, 0, 0]);
         assert_eq!(&filled, &4);
         assert_eq!(&buffer.cursor, &8);
         assert!(buffer.is_empty());
 
-        buffer.reset_buffer([1, 2, 3, 4, 5, 6, 7, 8]);
+        buffer.reset_buffer([1, 2]);
 
         assert!(!buffer.is_empty());
 
         let filled = buffer.fill(&mut output[filled..]);
 
-        assert_eq!(&output, &[5, 6, 7, 8, 1, 2]);
+        assert_eq!(&output, &[2, 0, 0, 0, 1, 0]);
         assert_eq!(&filled, &2);
         assert_eq!(&buffer.cursor, &2);
     }

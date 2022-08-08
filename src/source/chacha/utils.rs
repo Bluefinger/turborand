@@ -1,5 +1,24 @@
 use super::constants::INITIAL_STATE;
 
+#[repr(align(16))]
+pub(crate) struct AlignedSeed([u32; 10]);
+
+impl From<[u8; 40]> for AlignedSeed {
+    #[inline]
+    fn from(seed: [u8; 40]) -> Self {
+        Self(bytemuck::cast(seed))
+    }
+}
+
+impl std::ops::Deref for AlignedSeed {
+    type Target = [u32; 10];
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[inline]
 pub(super) fn increment_counter(mut state: [u32; 16]) -> Option<[u32; 16]> {
     let counter = ((state[13] as u64) << 32) | (state[12] as u64);
@@ -22,24 +41,25 @@ const fn pack_into_u32(input: &[u8]) -> u32 {
 }
 
 #[inline]
-pub(super) fn init_state(seed: [u8; 40]) -> [u32; 16] {
+pub(super) fn init_state<S: Into<AlignedSeed>>(seed: S) -> [u32; 16] {
+    let seed: AlignedSeed = seed.into();
     [
         pack_into_u32(&INITIAL_STATE[..4]),
         pack_into_u32(&INITIAL_STATE[4..8]),
         pack_into_u32(&INITIAL_STATE[8..12]),
         pack_into_u32(&INITIAL_STATE[12..]),
-        pack_into_u32(&seed[..4]),
-        pack_into_u32(&seed[4..8]),
-        pack_into_u32(&seed[8..12]),
-        pack_into_u32(&seed[12..16]),
-        pack_into_u32(&seed[16..20]),
-        pack_into_u32(&seed[20..24]),
-        pack_into_u32(&seed[24..28]),
-        pack_into_u32(&seed[28..32]),
+        seed[0],
+        seed[1],
+        seed[2],
+        seed[3],
+        seed[4],
+        seed[5],
+        seed[6],
+        seed[7],
         0,
         0,
-        pack_into_u32(&seed[32..36]),
-        pack_into_u32(&seed[36..]),
+        seed[8],
+        seed[9],
     ]
 }
 

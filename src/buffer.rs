@@ -1,4 +1,8 @@
+#[cfg(feature = "serialize")]
+use crate::{Deserialize, Serialize};
+
 #[derive(PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub(crate) struct EntropyBuffer<const SIZE: usize> {
     buffer: Vec<u8>,
     cursor: usize,

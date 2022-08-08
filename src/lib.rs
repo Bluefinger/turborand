@@ -80,13 +80,16 @@ use rand_core::RngCore;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(all(feature = "serialize", feature = "secure"))]
+use serde::{de::Visitor, ser::SerializeStruct, Deserializer};
+
 #[macro_use]
 mod methods;
 
-#[cfg(feature = "rand")]
-mod compatibility;
 #[cfg(feature = "secure")]
 mod buffer;
+#[cfg(feature = "rand")]
+mod compatibility;
 mod entropy;
 mod internal;
 mod rng;

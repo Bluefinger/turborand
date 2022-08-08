@@ -250,14 +250,18 @@ mod tests {
 
     #[cfg(feature = "serialize")]
     #[test]
-    fn serialize_rng() {
+    fn rng_serde_tokens() {
+        use serde_test::{assert_tokens, Token};
+
         let rng = rng!(12345);
 
-        let json = serde_json::to_string(&rng).unwrap();
-
-        assert_eq!(
-            json, "{\"state\":24691}",
-            "Serialized output not as expected"
-        );
+        assert_tokens(&rng, &[
+            Token::NewtypeStruct { name: "Rng" },
+            Token::Struct { name: "WyRand", len: 1 },
+            Token::BorrowedStr("state"),
+            Token::NewtypeStruct { name: "CellState" },
+            Token::U64(24691),
+            Token::StructEnd,
+        ]);
     }
 }

@@ -3,9 +3,13 @@ use crate::{
     TurboRand,
 };
 
+#[cfg(feature = "serialize")]
+use crate::{Deserialize, Serialize};
+
 /// A Random Number generator, powered by the `ChaCha8` algorithm.
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(docsrs, doc(cfg(feature = "secure")))]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct SecureRng(ChaCha8);
 
@@ -100,4 +104,179 @@ impl Clone for SecureRng {
 
 thread_local! {
     static SECURE: Rc<SecureRng> = Rc::new(SecureRng::with_seed(generate_entropy::<40>()));
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::secure_rng;
+    use super::*;
+
+    #[test]
+    fn no_leaking_debug() {
+        let rng = secure_rng!([0u8; 40]);
+
+        assert_eq!(format!("{:?}", rng), "SecureRng(ChaCha8)");
+    }
+
+    #[cfg(feature = "serialize")]
+    #[test]
+    fn serde_tokens() {
+        use serde_test::{assert_tokens, Token};
+
+        let rng = SecureRng::with_seed([0u8; 40]);
+
+        assert_tokens(
+            &rng,
+            &[
+                Token::NewtypeStruct {
+                    name: "SecureRng",
+                },
+                Token::Struct {
+                    name: "ChaCha8",
+                    len: 2,
+                },
+                Token::BorrowedStr("state"),
+                Token::Tuple { len: 16 },
+                Token::U32(1634760805),
+                Token::U32(857760878),
+                Token::U32(2036477234),
+                Token::U32(1797285236),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::U32(0),
+                Token::TupleEnd,
+                Token::BorrowedStr("cache"),
+                Token::Struct {
+                    name: "EntropyBuffer",
+                    len: 2,
+                },
+                Token::BorrowedStr("buffer"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::BorrowedStr("cursor"),
+                Token::U64(64),
+                Token::StructEnd,
+                Token::StructEnd,
+            ],
+        );
+
+        rng.gen::<16>();
+
+        assert_tokens(
+            &rng,
+            &[
+                Token::NewtypeStruct {
+                    name: "SecureRng",
+                },
+                Token::Struct {
+                    name: "ChaCha8",
+                    len: 2,
+                },
+                Token::BorrowedStr("state"),
+                Token::Tuple { len: 16 },
+                Token::U32(804192318),
+                Token::U32(3594542985),
+                Token::U32(3904396159),
+                Token::U32(2711947551),
+                Token::U32(3272508460),
+                Token::U32(998218446),
+                Token::U32(2296453912),
+                Token::U32(505049583),
+                Token::U32(1927367832),
+                Token::U32(1097802169),
+                Token::U32(1733510303),
+                Token::U32(425094469),
+                Token::U32(2739030578),
+                Token::U32(28346074),
+                Token::U32(3103619896),
+                Token::U32(1123945486),
+                Token::TupleEnd,
+                Token::BorrowedStr("cache"),
+                Token::Struct {
+                    name: "EntropyBuffer",
+                    len: 2,
+                },
+                Token::BorrowedStr("buffer"),
+                Token::Seq { len: Some(64) },
+                Token::U8(62),
+                Token::U8(0),
+                Token::U8(239),
+                Token::U8(47),
+                Token::U8(137),
+                Token::U8(95),
+                Token::U8(64),
+                Token::U8(214),
+                Token::U8(127),
+                Token::U8(91),
+                Token::U8(184),
+                Token::U8(232),
+                Token::U8(31),
+                Token::U8(9),
+                Token::U8(165),
+                Token::U8(161),
+                Token::U8(44),
+                Token::U8(132),
+                Token::U8(14),
+                Token::U8(195),
+                Token::U8(206),
+                Token::U8(154),
+                Token::U8(127),
+                Token::U8(59),
+                Token::U8(24),
+                Token::U8(27),
+                Token::U8(225),
+                Token::U8(136),
+                Token::U8(239),
+                Token::U8(113),
+                Token::U8(26),
+                Token::U8(30),
+                Token::U8(152),
+                Token::U8(76),
+                Token::U8(225),
+                Token::U8(114),
+                Token::U8(185),
+                Token::U8(33),
+                Token::U8(111),
+                Token::U8(65),
+                Token::U8(159),
+                Token::U8(68),
+                Token::U8(83),
+                Token::U8(103),
+                Token::U8(69),
+                Token::U8(109),
+                Token::U8(86),
+                Token::U8(25),
+                Token::U8(49),
+                Token::U8(74),
+                Token::U8(66),
+                Token::U8(163),
+                Token::U8(218),
+                Token::U8(134),
+                Token::U8(176),
+                Token::U8(1),
+                Token::U8(56),
+                Token::U8(123),
+                Token::U8(253),
+                Token::U8(184),
+                Token::U8(14),
+                Token::U8(12),
+                Token::U8(254),
+                Token::U8(66),
+                Token::SeqEnd,
+                Token::BorrowedStr("cursor"),
+                Token::U64(16),
+                Token::StructEnd,
+                Token::StructEnd,
+            ],
+        );
+    }
 }

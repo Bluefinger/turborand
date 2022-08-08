@@ -1,7 +1,10 @@
 use std::cell::UnsafeCell;
 
 use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Debug};
-use utils::{calculate_block, increment_counter, init_state};
+use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
+
+#[cfg(feature = "serialize")]
+use crate::{Deserialize, Deserializer, Serialize, SerializeStruct, Visitor};
 
 mod constants;
 mod utils;
@@ -13,8 +16,17 @@ pub(crate) struct ChaCha8 {
 }
 
 impl ChaCha8 {
+    #[cfg(feature = "serialize")]
     #[inline]
-    pub(crate) fn with_seed(seed: [u8; 40]) -> Self {
+    fn from_serde(state: [u32; 16], cache: EntropyBuffer<64>) -> Self {
+        Self {
+            state: UnsafeCell::new(state),
+            cache: UnsafeCell::new(cache),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn with_seed<S: Into<AlignedSeed>>(seed: S) -> Self {
         Self {
             state: UnsafeCell::new(init_state(seed)),
             cache: UnsafeCell::new(EntropyBuffer::<64>::new()),
@@ -22,7 +34,7 @@ impl ChaCha8 {
     }
 
     #[inline]
-    pub(crate) fn reseed(&self, seed: [u8; 40]) {
+    pub(crate) fn reseed<S: Into<AlignedSeed>>(&self, seed: S) {
         let state = init_state(seed);
         // SAFETY: Pointers are kept here only for as long as the write happens,
         // with the array of data not needing to be dropped and instead it being
@@ -122,6 +134,92 @@ impl PartialEq for ChaCha8 {
 }
 
 impl Eq for ChaCha8 {}
+
+#[cfg(feature = "serialize")]
+impl Serialize for ChaCha8 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        unsafe {
+            let state = &*self.state.get();
+            let cache = &*self.cache.get();
+
+            let mut s = serializer.serialize_struct("ChaCha8", 2)?;
+            s.serialize_field("state", state)?;
+            s.serialize_field("cache", cache)?;
+
+            s.end()
+        }
+    }
+}
+
+#[cfg(feature = "serialize")]
+impl<'de> Deserialize<'de> for ChaCha8 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &["state", "cache"];
+
+        struct ChaChaVisitor;
+
+        impl<'de> Visitor<'de> for ChaChaVisitor {
+            type Value = ChaCha8;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct ChaCha8")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let state = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let cache = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+
+                Ok(ChaCha8::from_serde(state, cache))
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut state = None;
+                let mut cache = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "state" => {
+                            if state.is_some() {
+                                return Err(serde::de::Error::duplicate_field("state"));
+                            }
+                            state = Some(map.next_value()?);
+                        }
+                        "cache" => {
+                            if cache.is_some() {
+                                return Err(serde::de::Error::duplicate_field("cache"));
+                            }
+                            cache = Some(map.next_value()?);
+                        }
+                        other => return Err(serde::de::Error::unknown_field(other, FIELDS)),
+                    }
+                }
+
+                let state = state.ok_or_else(|| serde::de::Error::missing_field("state"))?;
+                let cache = cache.ok_or_else(|| serde::de::Error::missing_field("cache"))?;
+
+                Ok(ChaCha8::from_serde(state, cache))
+            }
+        }
+
+        deserializer.deserialize_struct("ChaCha8", FIELDS, ChaChaVisitor)
+    }
+}
 
 #[cfg(test)]
 mod tests {

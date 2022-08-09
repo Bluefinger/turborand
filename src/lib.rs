@@ -42,71 +42,76 @@
 //! ```
 //!
 //! # Features
+//! 
+//! The base crate will always export the [`TurboCore`], [`SeededCore`],
+//! [`TurboRand`] and [`SecureCore`] traits, and will do so when set as
+//! `default-features = false` in the Cargo.toml. By default, it will
+//! have `wyrand` feature enabled as the basic PRNG exposed.
 //!
-//! * `atomic` - Enables [`AtomicRng`] & [`atomic_rng`] macros, so
-//!   to provide a thread-safe variation of [`Rng`].
+//! * `wyrand` - Enables [`Rng`] & [`rng!`] macros, so to provide a
+//!   basic, non-threadsafe PRNG. Enabled by default.
+//! * `atomic` - Enables [`AtomicRng`] & [`atomic_rng!`] macros, so
+//!   to provide a thread-safe variation of [`Rng`]. Enables `wyrand`
+//!   feature implicitly. **Note**, this is slower than [`Rng`].
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
 //! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`],
-//!   [`AtomicRng`] and [`SecureRng`], provided the last two have their
+//!   [`AtomicRng`] and [`SecureRng`], provided they have their
 //!   respective features activated as well.
-//! * `secure` - Enables [`SecureRng`] for providing a more cryptographically
+//! * `chacha` - Enables [`SecureRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`Rng`] in
 //!   throughput, but will produce much higher quality randomness.
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 
-use std::{
-    cell::Cell,
-    collections::hash_map::DefaultHasher,
-    fmt::Debug,
-    hash::{Hash, Hasher},
-    iter::repeat_with,
-    ops::{Bound, RangeBounds},
-    rc::Rc,
-    thread,
-};
+#[cfg(any(feature = "wyrand", feature = "chacha"))]
+use std::{fmt::Debug, rc::Rc};
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", any(feature = "wyrand", feature = "chacha")))]
 use instant::Instant;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(feature = "wyrand", feature = "chacha")
+))]
 use std::time::Instant;
-
-#[cfg(feature = "atomic")]
-use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(feature = "rand")]
 use rand_core::RngCore;
 
-#[cfg(feature = "serialize")]
+#[cfg(all(feature = "serialize", any(feature = "chacha", feature = "wyrand")))]
 use serde::{Deserialize, Serialize};
 
-#[cfg(all(feature = "serialize", any(feature = "secure", feature = "atomic")))]
+#[cfg(all(feature = "serialize", any(feature = "chacha", feature = "atomic")))]
 use serde::de::Visitor;
 
-#[cfg(all(feature = "serialize", feature = "secure"))]
+#[cfg(all(feature = "serialize", feature = "chacha"))]
 use serde::ser::SerializeStruct;
 
 #[macro_use]
 mod methods;
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 mod buffer;
 #[cfg(feature = "rand")]
 mod compatibility;
+#[cfg(any(feature = "wyrand", feature = "chacha"))]
 mod entropy;
+#[cfg(feature = "wyrand")]
 mod internal;
+#[cfg(feature = "wyrand")]
 mod rng;
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 mod secure_rng;
 mod source;
 mod traits;
 
-use crate::source::wyrand::WyRand;
-pub use crate::{internal::*, rng::*, traits::*};
+pub use crate::traits::*;
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "wyrand")]
+pub use crate::{internal::*, rng::*};
+
+#[cfg(feature = "chacha")]
 pub use crate::secure_rng::*;
 
 #[cfg(feature = "rand")]
@@ -137,6 +142,8 @@ pub use crate::compatibility::*;
 ///
 /// let value = rand.bool();
 /// ```
+#[cfg(feature = "wyrand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[macro_export]
 macro_rules! rng {
     () => {
@@ -174,8 +181,8 @@ macro_rules! rng {
 ///
 /// let value = rand.bool();
 /// ```
-#[cfg(feature = "atomic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
+#[cfg(all(feature = "wyrand", feature = "atomic"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "wyrand", feature = "atomic"))))]
 #[macro_export]
 macro_rules! atomic_rng {
     () => {
@@ -211,8 +218,8 @@ macro_rules! atomic_rng {
 ///
 /// let value = rand.bool();
 /// ```
-#[cfg(feature = "secure")]
-#[cfg_attr(docsrs, doc(cfg(feature = "secure")))]
+#[cfg(feature = "chacha")]
+#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 #[macro_export]
 macro_rules! secure_rng {
     () => {

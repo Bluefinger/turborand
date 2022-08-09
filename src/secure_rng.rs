@@ -8,7 +8,7 @@ use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `ChaCha8` algorithm.
 #[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(docsrs, doc(cfg(feature = "secure")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct SecureRng(ChaCha8);

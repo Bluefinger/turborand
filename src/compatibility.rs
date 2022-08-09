@@ -1,6 +1,9 @@
-use crate::{TurboCore, RngCore, Rng};
+use crate::{TurboCore, RngCore};
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "wyrand")]
+use crate::Rng;
+
+#[cfg(feature = "chacha")]
 use crate::SecureRng;
 
 #[cfg(feature = "atomic")]
@@ -85,6 +88,7 @@ impl<T: TurboCore + Default> From<T> for RandCompat<T> {
     }
 }
 
+#[cfg(feature = "wyrand")]
 impl From<RandCompat<Rng>> for Rng {
     #[inline]
     fn from(rand: RandCompat<Rng>) -> Self {
@@ -100,7 +104,7 @@ impl From<RandCompat<AtomicRng>> for AtomicRng {
     }
 }
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 impl From<RandCompat<SecureRng>> for SecureRng {
     #[inline]
     fn from(rand: RandCompat<SecureRng>) -> Self {

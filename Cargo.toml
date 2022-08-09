@@ -12,7 +12,7 @@ exclude = ["/.*"]
 resolver = "2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-instant = "0.1"
+instant = { version = "0.1" }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
@@ -23,7 +23,7 @@ wasm-bindgen-test = "0.3"
 
 [dependencies]
 bytemuck = { version = "1", features = ["min_const_generics"], optional = true }
-getrandom = { version = "0.2" }
+getrandom = { version = "0.2", optional = true }
 rand_core = { version = "0.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
@@ -36,8 +36,10 @@ name = "rand_bench"
 harness = false
 
 [features]
-atomic = []
-secure = ["dep:bytemuck"]
+default = ["wyrand"]
+atomic = ["wyrand"]
+wyrand = ["dep:getrandom"]
+chacha = ["dep:bytemuck", "dep:getrandom"]
 rand = ["dep:rand_core"]
 serialize = ["dep:serde"]
 

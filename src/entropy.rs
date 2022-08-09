@@ -1,4 +1,10 @@
-use crate::{thread, DefaultHasher, Hash, Hasher, Instant};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    thread,
+};
+
+use crate::Instant;
 
 use getrandom::{getrandom, Error};
 
@@ -44,8 +50,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn entropy_source() {
-        let result = generate_entropy::<{ core::mem::size_of::<u64>() }>();
+    fn fallback_entropy_source() {
+        let mut result = [0u8; { core::mem::size_of::<u64>() }];
+
+        fallback_entropy(&mut result).unwrap();
 
         assert_ne!(
             &u64::from_be_bytes(result),
@@ -55,8 +63,10 @@ mod tests {
     }
 
     #[test]
-    fn large_entropy_source() {
-        let result = generate_entropy::<{ core::mem::size_of::<u128>() }>();
+    fn large_fallback_entropy_source() {
+        let mut result = [0u8; { core::mem::size_of::<u128>() }];
+
+        fallback_entropy(&mut result).unwrap();
 
         let split = core::mem::size_of::<u64>();
 

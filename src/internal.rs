@@ -1,7 +1,9 @@
-use crate::{Cell, Debug};
+use std::cell::Cell;
+
+use crate::Debug;
 
 #[cfg(feature = "atomic")]
-use crate::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
@@ -15,6 +17,7 @@ use crate::Visitor;
 /// a custom [`Debug`] formatter on the structs in order to prevent
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
+#[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 pub trait State: Sized {
     /// Seed Associated Type, must be `Sized` and `Default`.
     type Seed: Sized + Default;
@@ -32,6 +35,7 @@ pub trait State: Sized {
 /// state of the PRNG in a [`Cell`].
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[repr(transparent)]
 pub struct CellState(Cell<u64>);
 
@@ -83,7 +87,7 @@ impl Debug for CellState {
 /// let res2 = thread_02.join();
 /// ```
 #[cfg(feature = "atomic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "atomic")))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "wyrand", feature = "atomic"))))]
 #[repr(transparent)]
 pub struct AtomicState(AtomicU64);
 

@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_main, Criterion};
 use turborand::*;
 
+#[cfg(feature = "wyrand")]
 fn turborand_cell_benchmark(c: &mut Criterion) {
     c.bench_function("CellRng new", |b| b.iter(|| black_box(rng!())));
     c.bench_function("CellRng clone", |b| {
@@ -168,7 +169,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     });
 }
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 fn turborand_secure_benchmark(c: &mut Criterion) {
     c.bench_function("SecureRng new", |b| {
         b.iter(|| black_box(secure_rng!()));
@@ -257,10 +258,11 @@ fn turborand_secure_benchmark(c: &mut Criterion) {
 
 pub fn benches() {
     let mut criterion: Criterion<_> = Criterion::default().configure_from_args();
+    #[cfg(feature = "wyrand")]
     turborand_cell_benchmark(&mut criterion);
     #[cfg(feature = "atomic")]
     turborand_atomic_benchmark(&mut criterion);
-    #[cfg(feature = "secure")]
+    #[cfg(feature = "chacha")]
     turborand_secure_benchmark(&mut criterion);
 }
 

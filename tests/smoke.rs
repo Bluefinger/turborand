@@ -346,7 +346,7 @@ fn fill_bytes_smoke_testing() {
     );
 }
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn secure_rng_smoke_test() {
@@ -373,7 +373,7 @@ fn secure_rng_smoke_test() {
     }
 }
 
-#[cfg(feature = "secure")]
+#[cfg(feature = "chacha")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn secure_rng_spread_test() {

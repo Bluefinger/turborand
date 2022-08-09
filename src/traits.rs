@@ -1,4 +1,7 @@
-use crate::{Bound, RangeBounds, repeat_with};
+use std::{
+    iter::repeat_with,
+    ops::{Bound, RangeBounds},
+};
 
 /// Base trait for implementing a PRNG. Two methods must be
 /// implemented: [`TurboCore::gen`] and [`TurboCore::fill_bytes`].

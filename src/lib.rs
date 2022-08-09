@@ -48,17 +48,17 @@
 //! `default-features = false` in the Cargo.toml. By default, it will
 //! have `wyrand` feature enabled as the basic PRNG exposed.
 //!
-//! * `wyrand` - Enables [`Rng`] & [`rng!`] macros, so to provide a
+//! * **`wyrand`** - Enables [`Rng`] & [`rng!`] macros, so to provide a
 //!   basic, non-threadsafe PRNG. Enabled by default.
-//! * `atomic` - Enables [`AtomicRng`] & [`atomic_rng!`] macros, so
+//! * **`atomic`** - Enables [`AtomicRng`] & [`atomic_rng!`] macros, so
 //!   to provide a thread-safe variation of [`Rng`]. Enables `wyrand`
 //!   feature implicitly. **Note**, this is slower than [`Rng`].
-//! * `rand` - Provides [`RandCompat`], which implements [`RngCore`]
+//! * **`rand`** - Provides [`RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
-//! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`],
+//! * **`serialize`** - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`],
 //!   [`AtomicRng`] and [`SecureRng`], provided they have their
 //!   respective features activated as well.
-//! * `chacha` - Enables [`SecureRng`] for providing a more cryptographically
+//! * **`chacha`** - Enables [`SecureRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`Rng`] in
 //!   throughput, but will produce much higher quality randomness.
 #![warn(missing_docs, rust_2018_idioms)]

@@ -1,3 +1,4 @@
+//! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
     entropy::generate_entropy, source::chacha::ChaCha8, Rc, SecureCore, SeededCore, TurboCore,
     TurboRand,
@@ -64,7 +65,7 @@ impl Default for SecureRng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
     /// let rng1 = SecureRng::default();
     /// let rng2 = SecureRng::default();
@@ -83,7 +84,7 @@ impl Clone for SecureRng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
     /// let rng1 = SecureRng::with_seed([0u8; 40]);
     /// let rng2 = SecureRng::with_seed([0u8; 40]);
@@ -108,12 +109,11 @@ thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use crate::secure_rng;
     use super::*;
 
     #[test]
     fn no_leaking_debug() {
-        let rng = secure_rng!([0u8; 40]);
+        let rng = SecureRng::with_seed([0u8; 40]);
 
         assert_eq!(format!("{:?}", rng), "SecureRng(ChaCha8)");
     }
@@ -128,9 +128,7 @@ mod tests {
         assert_tokens(
             &rng,
             &[
-                Token::NewtypeStruct {
-                    name: "SecureRng",
-                },
+                Token::NewtypeStruct { name: "SecureRng" },
                 Token::Struct {
                     name: "ChaCha8",
                     len: 2,
@@ -174,9 +172,7 @@ mod tests {
         assert_tokens(
             &rng,
             &[
-                Token::NewtypeStruct {
-                    name: "SecureRng",
-                },
+                Token::NewtypeStruct { name: "SecureRng" },
                 Token::Struct {
                     name: "ChaCha8",
                     len: 2,

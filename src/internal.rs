@@ -1,3 +1,5 @@
+//! Internal structs and traits for the `WyRand` PRNGs.
+
 use std::cell::Cell;
 
 use crate::Debug;
@@ -68,11 +70,11 @@ impl Debug for CellState {
 /// state of the PRNG in a [`AtomicU64`].
 ///
 /// ```
-/// use turborand::*;
+/// use turborand::prelude::*;
 /// use std::sync::Arc;
 /// use std::thread;
 ///
-/// let rand = Arc::new(atomic_rng!()); // Will not compile with `Rng`
+/// let rand = Arc::new(AtomicRng::default()); // Will not compile with `Rng`
 /// let rand2 = rand.clone();
 ///
 /// let thread_01 = thread::spawn(move || {

@@ -1,13 +1,15 @@
-use crate::{TurboCore, RngCore};
+//! Compatibility shims for the `rand` crate ecosystem.
+
+use crate::{traits::TurboCore, RngCore};
 
 #[cfg(feature = "wyrand")]
-use crate::Rng;
+use crate::rng::Rng;
 
 #[cfg(feature = "chacha")]
-use crate::SecureRng;
+use crate::secure_rng::SecureRng;
 
 #[cfg(feature = "atomic")]
-use crate::AtomicRng;
+use crate::rng::AtomicRng;
 
 /// A wrapper struct around [`TurboCore`] to allow implementing
 /// [`RngCore`] trait in a compatible manner.
@@ -21,7 +23,7 @@ impl<T: TurboCore + Default> RandCompat<T> {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     /// use rand_core::RngCore;
     ///
     /// let mut rng = RandCompat::<Rng>::new();
@@ -44,7 +46,7 @@ impl<T: TurboCore + Default> Default for RandCompat<T> {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     /// use rand_core::RngCore;
     ///
     /// let mut rng1 = RandCompat::<Rng>::default();
@@ -124,6 +126,21 @@ impl From<RandCompat<SecureRng>> for SecureRng {
 pub struct RandBorrowed<'a, T: TurboCore + Default>(&'a mut T);
 
 impl<'a, T: TurboCore + Default> From<&'a mut T> for RandBorrowed<'a, T> {
+    /// Convert a [`TurboCore`] reference into a [`RandBorrowed`] struct,
+    /// allowing a borrowed reference to be used with the `rand` crate
+    /// ecosystem.
+    /// 
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    /// use rand_core::RngCore;
+    /// 
+    /// let mut turbo = Rng::with_seed(Default::default());
+    /// 
+    /// let mut rng = RandBorrowed::from(&mut turbo);
+    /// 
+    /// assert_eq!(rng.next_u32(), 3791187244);
+    /// ```
     #[inline]
     fn from(rng: &'a mut T) -> Self {
         Self(rng)

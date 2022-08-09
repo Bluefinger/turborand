@@ -1,5 +1,5 @@
 use std::{collections::BTreeMap, iter::repeat_with, ops::RangeBounds};
-use turborand::*;
+use turborand::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::*;
@@ -10,7 +10,7 @@ wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_determinism_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let value = rng.u64(1..10);
 
@@ -36,7 +36,7 @@ fn range_determinism_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_smoke_testing() {
-    let rng = rng!();
+    let rng = Rng::default();
 
     for _ in 0..1000 {
         let index = rng.usize(4..10);
@@ -102,7 +102,7 @@ fn range_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn small_range_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let val1 = rng.u64(0..1);
     let val2 = rng.i64(0..1);
@@ -115,7 +115,7 @@ fn small_range_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unbounded_range_smoke_testing() {
-    let rng = rng!();
+    let rng = Rng::default();
 
     for _ in 0..1000 {
         let index = rng.u8(..);
@@ -151,7 +151,7 @@ fn unbounded_range_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unsigned_range_spread_test() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let actual_histogram: BTreeMap<u32, u32> =
         repeat_with(|| rng.u32(1..=10))
@@ -184,7 +184,7 @@ fn unsigned_range_spread_test() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn signed_range_spread_test() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let actual_histogram: BTreeMap<i32, u32> =
         repeat_with(|| rng.i32(-5..=5))
@@ -218,7 +218,7 @@ fn signed_range_spread_test() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn character_smoke_testing() {
-    let rng = rng!();
+    let rng = Rng::default();
 
     for _ in 0..1000 {
         let character = rng.alphabetic();
@@ -264,7 +264,7 @@ fn character_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn digit_smoke_testing() {
-    let rng = rng!();
+    let rng = Rng::default();
 
     for _ in 0..1000 {
         let digit = rng.digit(10);
@@ -321,7 +321,7 @@ fn digit_smoke_testing() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn fill_bytes_smoke_testing() {
     let mut bytes = [0u8; 12];
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     for _ in 0..1000 {
         rng.fill_bytes(&mut bytes);
@@ -438,7 +438,7 @@ fn secure_rng_spread_test() {
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn sample_spread_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
     let mut sampled = [0; 8];
@@ -459,7 +459,7 @@ fn sample_spread_testing() {
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn sample_multiple_spread_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
     let mut sampled = [0; 8];
@@ -482,7 +482,7 @@ fn sample_multiple_spread_testing() {
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn weighted_sample_spread_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let samples: [u32; 5] = [0, 1, 2, 3, 4];
 
@@ -518,7 +518,7 @@ fn weighted_sample_spread_testing() {
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn shuffle_smoke_testing() {
-    let rng = rng!(Default::default());
+    let rng = Rng::with_seed(Default::default());
 
     let mut values = [1, 2, 3, 4, 5, 6];
 

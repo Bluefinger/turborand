@@ -15,9 +15,9 @@ too much security, as per the recommendations set out in the [Too Much Crypto](h
 ## Examples
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 
-let rand = rng!();
+let rand = Rng::new();
 
 if rand.bool() {
     println!("Success! :D");
@@ -29,9 +29,9 @@ if rand.bool() {
 Sample a value from a list:
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 
-let rand = rng!();
+let rand = Rng::new();
 
 let values = [1, 2, 3, 4, 5];
 
@@ -41,10 +41,10 @@ let value = rand.sample(&values);
 Generate a vector with random values:
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 use std::iter::repeat_with;
 
-let rand = rng!();
+let rand = Rng::new();
 
 let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 ```

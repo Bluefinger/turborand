@@ -57,6 +57,7 @@ Version 0.6 introduces a major reworking of the crate, with code reorganised and
 - `Rng` is now split into `Rng` and `AtomicRng`, no more top level generics that required exporting internal traits. `State` trait is now made private and no longer available to be implemented, as this was an internal implementation detail for `WyRand`.
 - All previous methods for `Rng` are now implemented in `TurboCore`, `SeededCore` and `TurboRand` traits. These are part of the `prelude` so as long as they are included, all existing methods will work as expected.
 - `Rng` is now under a feature flag, `wyrand`. This is enabled by default however, unless `default-features = false` is applied on the dependency declaration in Cargo.toml.
+- _Yeet_ the `rng!`, `atomic_rng!` macros, as these are no longer needed to manage the generics spam that has since been refactored out. Instead, use `::new()`, `::default()` or `::with_seed(seed)` methods instead.
 
 ## License
 

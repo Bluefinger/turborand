@@ -15,9 +15,9 @@ too much security, as per the recommendations set out in the [Too Much Crypto](h
 ## Examples
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 
-let rand = rng!();
+let rand = Rng::new();
 
 if rand.bool() {
     println!("Success! :D");
@@ -29,9 +29,9 @@ if rand.bool() {
 Sample a value from a list:
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 
-let rand = rng!();
+let rand = Rng::new();
 
 let values = [1, 2, 3, 4, 5];
 
@@ -41,13 +41,23 @@ let value = rand.sample(&values);
 Generate a vector with random values:
 
 ```rust
-use turborand::*;
+use turborand::prelude::*;
 use std::iter::repeat_with;
 
-let rand = rng!();
+let rand = Rng::new();
 
 let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 ```
+
+## Migration from 0.5 to 0.6
+
+Version 0.6 introduces a major reworking of the crate, with code reorganised and also exposed more granularly via features. First things to note:
+
+- All major exports for the crate are now in the `prelude` module. Top level only exports the new traits for `turborand`.
+- `Rng` is now split into `Rng` and `AtomicRng`, no more top level generics that required exporting internal traits. `State` trait is now made private and no longer available to be implemented, as this was an internal implementation detail for `WyRand`.
+- All previous methods for `Rng` are now implemented in `TurboCore`, `SeededCore` and `TurboRand` traits. These are part of the `prelude` so as long as they are included, all existing methods will work as expected.
+- `Rng` is now under a feature flag, `wyrand`. This is enabled by default however, unless `default-features = false` is applied on the dependency declaration in Cargo.toml.
+- _Yeet_ the `rng!`, `atomic_rng!` macros, as these are no longer needed to manage the generics spam that has since been refactored out. Instead, use `::new()`, `::default()` or `::with_seed(seed)` methods instead.
 
 ## License
 

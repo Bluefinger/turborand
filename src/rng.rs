@@ -1,9 +1,12 @@
+//! A fast but **not** cryptographically secure PRNG based on [Wyrand](https://github.com/wangyi-fudan/wyhash).
+
 use crate::{
-    entropy::generate_entropy, CellState, Debug, Rc, SeededCore, TurboCore, TurboRand, WyRand,
+    entropy::generate_entropy, internal::CellState, source::wyrand::WyRand, Debug, Rc, SeededCore,
+    TurboCore, TurboRand,
 };
 
 #[cfg(feature = "atomic")]
-use crate::AtomicState;
+use crate::internal::AtomicState;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
@@ -11,6 +14,7 @@ use crate::{Deserialize, Serialize};
 /// A Random Number generator, powered by the `WyRand` algorithm.
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[repr(transparent)]
 pub struct Rng(WyRand<CellState>);
 
@@ -59,7 +63,7 @@ impl Default for Rng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
     /// let rng1 = Rng::default();
     /// let rng2 = Rng::default();
@@ -78,10 +82,10 @@ impl Clone for Rng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng1 = rng!(Default::default());
-    /// let rng2 = rng!(Default::default());
+    /// let rng1 = Rng::with_seed(Default::default());
+    /// let rng2 = Rng::with_seed(Default::default());
     ///
     /// // Use the RNGs once each.
     /// rng1.bool();
@@ -102,6 +106,7 @@ impl Clone for Rng {
 #[cfg(feature = "atomic")]
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "wyrand", feature = "atomic"))))]
 #[repr(transparent)]
 pub struct AtomicRng(WyRand<AtomicState>);
 
@@ -122,7 +127,7 @@ impl Default for AtomicRng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
     /// let rng1 = AtomicRng::default();
     /// let rng2 = AtomicRng::default();
@@ -142,10 +147,10 @@ impl Clone for AtomicRng {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng1 = atomic_rng!(Default::default());
-    /// let rng2 = atomic_rng!(Default::default());
+    /// let rng1 = AtomicRng::with_seed(Default::default());
+    /// let rng2 = AtomicRng::with_seed(Default::default());
     ///
     /// // Use the RNGs once each.
     /// rng1.bool();
@@ -196,11 +201,6 @@ thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use crate::rng;
-
-    #[cfg(feature = "atomic")]
-    use crate::atomic_rng;
-
     #[cfg(feature = "serialize")]
     use serde_test::{assert_tokens, Token};
 
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn rng_no_leaking_debug() {
-        let rng = rng!(Default::default());
+        let rng = Rng::with_seed(Default::default());
 
         assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
     }
@@ -216,7 +216,7 @@ mod tests {
     #[cfg(feature = "atomic")]
     #[test]
     fn atomic_no_leaking_debug() {
-        let rng = atomic_rng!(Default::default());
+        let rng = AtomicRng::with_seed(Default::default());
 
         assert_eq!(format!("{:?}", rng), "AtomicRng(WyRand(AtomicState))");
     }
@@ -226,13 +226,13 @@ mod tests {
     fn rand_compatibility() {
         use rand_core::RngCore;
 
-        use crate::{RandCompat, RandBorrowed};
+        use crate::compatibility::{RandBorrowed, RandCompat};
 
         fn get_rand_num<R: RngCore>(rng: &mut R) -> u64 {
             rng.next_u64()
         }
 
-        let rng = rng!(Default::default());
+        let rng = Rng::with_seed(Default::default());
 
         let mut rand = RandCompat::from(rng);
 
@@ -244,7 +244,7 @@ mod tests {
             result
         );
 
-        let mut rng = rng!(Default::default());
+        let mut rng = Rng::with_seed(Default::default());
 
         let mut rand = RandBorrowed::from(&mut rng);
 
@@ -260,30 +260,44 @@ mod tests {
     #[cfg(feature = "serialize")]
     #[test]
     fn rng_serde_tokens() {
-        let rng = rng!(12345);
+        let rng = Rng::with_seed(12345);
 
-        assert_tokens(&rng, &[
-            Token::NewtypeStruct { name: "Rng" },
-            Token::Struct { name: "WyRand", len: 1 },
-            Token::BorrowedStr("state"),
-            Token::NewtypeStruct { name: "CellState" },
-            Token::U64(24691),
-            Token::StructEnd,
-        ]);
+        assert_tokens(
+            &rng,
+            &[
+                Token::NewtypeStruct { name: "Rng" },
+                Token::Struct {
+                    name: "WyRand",
+                    len: 1,
+                },
+                Token::BorrowedStr("state"),
+                Token::NewtypeStruct { name: "CellState" },
+                Token::U64(24691),
+                Token::StructEnd,
+            ],
+        );
     }
 
     #[cfg(all(feature = "serialize", feature = "atomic"))]
     #[test]
     fn atomic_serde_tokens() {
-        let rng = atomic_rng!(12345);
+        let rng = AtomicRng::with_seed(12345);
 
-        assert_tokens(&rng, &[
-            Token::NewtypeStruct { name: "AtomicRng" },
-            Token::Struct { name: "WyRand", len: 1 },
-            Token::BorrowedStr("state"),
-            Token::NewtypeStruct { name: "AtomicState" },
-            Token::U64(24691),
-            Token::StructEnd,
-        ]);
+        assert_tokens(
+            &rng,
+            &[
+                Token::NewtypeStruct { name: "AtomicRng" },
+                Token::Struct {
+                    name: "WyRand",
+                    len: 1,
+                },
+                Token::BorrowedStr("state"),
+                Token::NewtypeStruct {
+                    name: "AtomicState",
+                },
+                Token::U64(24691),
+                Token::StructEnd,
+            ],
+        );
     }
 }

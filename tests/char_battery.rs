@@ -1,5 +1,5 @@
 use std::{collections::HashSet, convert::TryFrom, ops::RangeBounds};
-use turborand::*;
+use turborand::prelude::*;
 
 fn char_coverage_stress_test<R>(n: usize, range: R)
 where
@@ -8,7 +8,7 @@ where
     let all: HashSet<char> = range.clone().collect();
     let mut covered = HashSet::new();
 
-    let rng = rng!();
+    let rng = Rng::default();
 
     for _ in 0..n {
         let c = rng.char(range.clone());

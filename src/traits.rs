@@ -1,18 +1,45 @@
-use crate::{Bound, RangeBounds, repeat_with};
+use std::{
+    iter::repeat_with,
+    ops::{Bound, RangeBounds},
+};
 
 /// Base trait for implementing a PRNG. Two methods must be
 /// implemented: [`TurboCore::gen`] and [`TurboCore::fill_bytes`].
 /// Once implemented, the rest of the trait provides default
 /// implementations for generating all integer type, though it is not
 /// recommended to override these.
+/// 
+/// # General Notes
+/// 
+/// When implementing on top of [`TurboCore`], the following considerations
+/// should be made:
+/// 
+/// * [`Default`] - should be implemented, but defaults should be
+///   non-deterministic. It should initialise with a randomised seed as
+///   a default, with the intent being quick and simple but random
+///   number generation.
+/// * [`Debug`] - should be implemented, but with care so to not leak
+///   the internal state of the PRNG.
+/// * [`PartialEq`] - should be implemented along with [`Eq`], so that
+///   easy comparisons can be made with PRNGs to see if they are in the
+///   same or different internal state.
+/// * [`Clone`] - should be implemented, but with deterministically derived
+///   new internal states for the cloned instances. The cloned instance
+///   should not equal the original, but given a set seed on the original,
+///   the cloned instance should derive a new state in a deterministic fashion.
+/// * [`Copy`] - Do **not** implement [`Copy`], as it makes it too implicit
+///   when handling references and passing around the instance. When a
+///   copy is made, this modifies the state of the original in
+///   producing the new state of the copied instance, which is not
+///   something you want to happen implicitly.
 pub trait TurboCore: Sized {
     /// Returns an array of constant `SIZE` containing random `u8` values.
     /// 
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rand = rng!(Default::default());
+    /// let rand = Rng::with_seed(Default::default());
     ///
     /// let bytes = rand.gen::<10>();
     ///
@@ -24,9 +51,9 @@ pub trait TurboCore: Sized {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rand = rng!(Default::default());
+    /// let rand = Rng::with_seed(Default::default());
     ///
     /// let mut bytes = [0u8; 10];
     ///
@@ -249,9 +276,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// assert_eq!(rng.bool(), true);
     /// ```
@@ -270,9 +297,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// assert_eq!(rng.chance(1.0), true);
     /// ```
@@ -299,9 +326,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5, 6];
     ///
@@ -322,9 +349,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5, 6];
     ///
@@ -354,9 +381,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5, 6];
     ///
@@ -388,9 +415,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rng = rng!(Default::default());
+    /// let rng = Rng::with_seed(Default::default());
     ///
     /// let values = [1, 2, 3, 4, 5];
     /// let mut shuffled = values.clone();
@@ -433,9 +460,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rand = rng!(Default::default());
+    /// let rand = Rng::with_seed(Default::default());
     ///
     /// let digit = rand.digit(16);
     ///
@@ -465,9 +492,9 @@ pub trait TurboRand: TurboCore {
     ///
     /// # Example
     /// ```
-    /// use turborand::*;
+    /// use turborand::prelude::*;
     ///
-    /// let rand = rng!(Default::default());
+    /// let rand = Rng::with_seed(Default::default());
     ///
     /// let character = rand.char('a'..'Ç');
     ///

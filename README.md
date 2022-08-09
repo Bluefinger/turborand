@@ -49,6 +49,15 @@ let rand = Rng::new();
 let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 ```
 
+## Migration from 0.5 to 0.6
+
+Version 0.6 introduces a major reworking of the crate, with code reorganised and also exposed more granularly via features. First things to note:
+
+- All major exports for the crate are now in the `prelude` module. Top level only exports the new traits for `turborand`.
+- `Rng` is now split into `Rng` and `AtomicRng`, no more top level generics that required exporting internal traits. `State` trait is now made private and no longer available to be implemented, as this was an internal implementation detail for `WyRand`.
+- All previous methods for `Rng` are now implemented in `TurboCore`, `SeededCore` and `TurboRand` traits. These are part of the `prelude` so as long as they are included, all existing methods will work as expected.
+- `Rng` is now under a feature flag, `wyrand`. This is enabled by default however, unless `default-features = false` is applied on the dependency declaration in Cargo.toml.
+
 ## License
 
 Licensed under either of

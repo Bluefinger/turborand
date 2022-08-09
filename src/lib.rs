@@ -47,7 +47,9 @@
 //!   to provide a thread-safe variation of [`Rng`].
 //! * `rand` - Provides [`RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
-//! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`].
+//! * `serialize` - Enables [`Serialize`] and [`Deserialize`] derives on [`Rng`],
+//!   [`AtomicRng`] and [`SecureRng`], provided the last two have their
+//!   respective features activated as well.
 //! * `secure` - Enables [`SecureRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`Rng`] in
 //!   throughput, but will produce much higher quality randomness.
@@ -80,8 +82,11 @@ use rand_core::RngCore;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(all(feature = "serialize", any(feature = "secure", feature = "atomic")))]
+use serde::de::Visitor;
+
 #[cfg(all(feature = "serialize", feature = "secure"))]
-use serde::{de::Visitor, ser::SerializeStruct, Deserializer};
+use serde::ser::SerializeStruct;
 
 #[macro_use]
 mod methods;
@@ -196,7 +201,7 @@ macro_rules! atomic_rng {
 /// let value = rand.bool();
 /// ```
 ///
-/// Else, pass in a `u64` value to get an [`SecureRng`] instance with the seed
+/// Else, pass in a `[u8; 40]` array to get an [`SecureRng`] instance with the seed
 /// initialised to that value.
 ///
 /// ```

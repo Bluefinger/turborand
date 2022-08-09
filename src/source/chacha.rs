@@ -4,7 +4,7 @@ use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Debug};
 use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
 
 #[cfg(feature = "serialize")]
-use crate::{Deserialize, Deserializer, Serialize, SerializeStruct, Visitor};
+use crate::{Deserialize, Serialize, SerializeStruct, Visitor};
 
 mod constants;
 mod utils;
@@ -141,6 +141,11 @@ impl Serialize for ChaCha8 {
     where
         S: serde::Serializer,
     {
+        // SAFETY: The RNG should not be getting mutated/modified
+        // at the same time as it is being serialized, and the
+        // pointers will be pointing to data that has been
+        // initialised. Casting to immutable references is therefore
+        // safe.
         unsafe {
             let state = &*self.state.get();
             let cache = &*self.cache.get();
@@ -158,7 +163,7 @@ impl Serialize for ChaCha8 {
 impl<'de> Deserialize<'de> for ChaCha8 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &["state", "cache"];
 

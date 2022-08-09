@@ -6,6 +6,9 @@ use crate::{AtomicU64, Ordering};
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
 
+#[cfg(all(feature = "serialize", feature = "atomic"))]
+use crate::Visitor;
+
 /// Trait for implementing [`State`] to be used in `WyRand`.
 ///
 /// Those implementing [`State`] should also ensure to implement
@@ -120,6 +123,62 @@ impl Eq for AtomicState {}
 impl Debug for AtomicState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("AtomicState").finish()
+    }
+}
+
+#[cfg(all(feature = "atomic", feature = "serialize"))]
+impl Serialize for AtomicState {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let value = self.get();
+        serializer.serialize_newtype_struct("AtomicState", &value)
+    }
+}
+
+#[cfg(all(feature = "atomic", feature = "serialize"))]
+impl<'de> Deserialize<'de> for AtomicState {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct AtomicStateVisitor;
+        struct AtomicU64Visitor;
+
+        impl Visitor<'_> for AtomicU64Visitor {
+            type Value = u64;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("u64 state")
+            }
+
+            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(v)
+            }
+        }
+
+        impl<'de> Visitor<'de> for AtomicStateVisitor {
+            type Value = AtomicState;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("NewtypeStruct AtomicState")
+            }
+
+            fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                let value = deserializer.deserialize_u64(AtomicU64Visitor)?;
+
+                Ok(AtomicState::with_seed(value))
+            }
+        }
+
+        deserializer.deserialize_newtype_struct("AtomicState", AtomicStateVisitor)
     }
 }
 

@@ -9,7 +9,7 @@ use crate::AtomicState;
 use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Rng(WyRand<CellState>);
@@ -97,16 +97,11 @@ impl Clone for Rng {
     }
 }
 
-impl Debug for Rng {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Rng").field(&self.0).finish()
-    }
-}
-
 /// A Random Number generator, powered by the `WyRand` algorithm, but with
 /// thread-safe internal state.
 #[cfg(feature = "atomic")]
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct AtomicRng(WyRand<AtomicState>);
 
@@ -203,13 +198,27 @@ thread_local! {
 mod tests {
     use crate::rng;
 
+    #[cfg(feature = "atomic")]
+    use crate::atomic_rng;
+
+    #[cfg(feature = "serialize")]
+    use serde_test::{assert_tokens, Token};
+
     use super::*;
 
     #[test]
-    fn no_leaking_debug() {
+    fn rng_no_leaking_debug() {
         let rng = rng!(Default::default());
 
         assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
+    }
+
+    #[cfg(feature = "atomic")]
+    #[test]
+    fn atomic_no_leaking_debug() {
+        let rng = atomic_rng!(Default::default());
+
+        assert_eq!(format!("{:?}", rng), "AtomicRng(WyRand(AtomicState))");
     }
 
     #[cfg(feature = "rand")]
@@ -251,8 +260,6 @@ mod tests {
     #[cfg(feature = "serialize")]
     #[test]
     fn rng_serde_tokens() {
-        use serde_test::{assert_tokens, Token};
-
         let rng = rng!(12345);
 
         assert_tokens(&rng, &[
@@ -260,6 +267,21 @@ mod tests {
             Token::Struct { name: "WyRand", len: 1 },
             Token::BorrowedStr("state"),
             Token::NewtypeStruct { name: "CellState" },
+            Token::U64(24691),
+            Token::StructEnd,
+        ]);
+    }
+
+    #[cfg(all(feature = "serialize", feature = "atomic"))]
+    #[test]
+    fn atomic_serde_tokens() {
+        let rng = atomic_rng!(12345);
+
+        assert_tokens(&rng, &[
+            Token::NewtypeStruct { name: "AtomicRng" },
+            Token::Struct { name: "WyRand", len: 1 },
+            Token::BorrowedStr("state"),
+            Token::NewtypeStruct { name: "AtomicState" },
             Token::U64(24691),
             Token::StructEnd,
         ]);

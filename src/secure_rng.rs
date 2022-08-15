@@ -1,7 +1,6 @@
 //! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
     entropy::generate_entropy, source::chacha::ChaCha8, Rc, SecureCore, SeededCore, TurboCore,
-    TurboRand,
 };
 
 #[cfg(feature = "serialize")]
@@ -57,7 +56,6 @@ impl SeededCore for SecureRng {
 }
 
 impl SecureCore for SecureRng {}
-impl TurboRand for SecureRng {}
 
 impl Default for SecureRng {
     /// Initialises a default instance of [`SecureRng`]. Warning, the default is

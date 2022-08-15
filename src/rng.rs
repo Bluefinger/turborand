@@ -2,7 +2,7 @@
 
 use crate::{
     entropy::generate_entropy, internal::CellState, source::wyrand::WyRand, Debug, Rc, SeededCore,
-    TurboCore, TurboRand,
+    TurboCore,
 };
 
 #[cfg(feature = "atomic")]
@@ -54,8 +54,6 @@ impl SeededCore for Rng {
         self.0.reseed(seed);
     }
 }
-
-impl TurboRand for Rng {}
 
 impl Default for Rng {
     /// Initialises a default instance of [`Rng`]. Warning, the default is
@@ -189,9 +187,6 @@ impl SeededCore for AtomicRng {
         self.0.reseed(seed);
     }
 }
-
-#[cfg(feature = "atomic")]
-impl TurboRand for AtomicRng {}
 
 thread_local! {
     static RNG: Rc<Rng> = Rc::new(Rng(WyRand::with_seed(

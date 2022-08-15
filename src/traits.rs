@@ -8,17 +8,17 @@ use std::{
 /// Once implemented, the rest of the trait provides default
 /// implementations for generating all integer type, though it is not
 /// recommended to override these.
-/// 
+///
 /// # General Notes
-/// 
+///
 /// When implementing on top of [`TurboCore`], the following considerations
 /// should be made:
-/// 
+///
 /// * [`Default`] - should be implemented, but defaults should be
 ///   non-deterministic. It should initialise with a randomised seed as
 ///   a default, with the intent being quick and simple but random
 ///   number generation.
-/// * [`Debug`] - should be implemented, but with care so to not leak
+/// * [`std::fmt::Debug`] - should be implemented, but with care so to not leak
 ///   the internal state of the PRNG.
 /// * [`PartialEq`] - should be implemented along with [`Eq`], so that
 ///   easy comparisons can be made with PRNGs to see if they are in the
@@ -34,7 +34,7 @@ use std::{
 ///   something you want to happen implicitly.
 pub trait TurboCore: Sized {
     /// Returns an array of constant `SIZE` containing random `u8` values.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use turborand::prelude::*;
@@ -94,9 +94,10 @@ pub trait SeededCore: TurboCore {
 /// A marker trait to be applied to anything that implements [`TurboCore`]
 /// in order to indicate that a PRNG source is cryptographically secure, so
 /// being a CSPRNG.
-/// 
+///
 /// This trait is provided as guidance only, and it is for the implementor to
-/// ensure that their PRNG source qualifies as cryptographically secure.
+/// ensure that their PRNG source qualifies as cryptographically secure. Must
+/// be manually applied and is not an auto-trait.
 pub trait SecureCore: TurboCore {}
 
 /// Extension trait for automatically implementing all [`TurboRand`] methods,
@@ -558,6 +559,8 @@ pub trait TurboRand: TurboCore {
     }
 }
 
+impl<T: TurboCore> TurboRand for T {}
+
 /// Computes `(a * b) >> 128`. Adapted from: https://stackoverflow.com/a/28904636
 #[inline]
 fn multiply_high_u128(a: u128, b: u128) -> u128 {
@@ -575,4 +578,84 @@ fn multiply_high_u128(a: u128, b: u128) -> u128 {
     let carry = (a_high_x_b_low as u64 as u128 + a_low_x_b_high as u64 as u128 + carry) >> 64;
 
     a_high * b_high + (a_high_x_b_low >> 64) + (a_low_x_b_high >> 64) + carry
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    #[derive(Debug, Default)]
+    struct TestRng(Cell<u8>);
+
+    impl TestRng {
+        fn new() -> Self {
+            Self(Cell::new(0))
+        }
+
+        fn next(&self) -> u8 {
+            let value = self.0.get();
+
+            self.0.set(value.wrapping_add(1));
+
+            value
+        }
+    }
+
+    impl TurboCore for TestRng {
+        fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+            std::array::from_fn(|_| self.next())
+        }
+
+        fn fill_bytes<B: AsMut<[u8]>>(&self, mut buffer: B) {
+            let buffer = buffer.as_mut();
+
+            buffer.iter_mut().for_each(|slot| *slot = self.next());
+        }
+    }
+
+    impl SeededCore for TestRng {
+        type Seed = u8;
+
+        fn with_seed(seed: Self::Seed) -> Self {
+            Self(Cell::new(seed))
+        }
+
+        fn reseed(&self, seed: Self::Seed) {
+            self.0.set(seed);
+        }
+    }
+
+    #[test]
+    fn auto_trait_application() {
+        let rng = TestRng::new();
+
+        fn use_rng<T: TurboRand>(source: &T) -> u8 {
+            source.u8(..)
+        }
+
+        let value = use_rng(&rng);
+
+        assert_eq!(value, 0);
+    }
+
+    #[test]
+    fn seeded_methods() {
+        let rng = TestRng::with_seed(5);
+
+        fn test_seeded_methods<T: SeededCore>(source: &T) where T: SeededCore<Seed = u8> {
+            let values = source.gen();
+
+            assert_eq!(&values, &[5, 6, 7]);
+
+            source.reseed(3);
+
+            let values = source.gen();
+
+            assert_eq!(&values, &[3, 4, 5]);
+        }
+
+        test_seeded_methods(&rng);
+    }
 }

@@ -2,7 +2,7 @@
 
 use crate::{
     entropy::generate_entropy, internal::CellState, source::wyrand::WyRand, Debug, Rc, SeededCore,
-    TurboCore,
+    TurboCore, GenCore,
 };
 
 #[cfg(feature = "atomic")]
@@ -34,22 +34,29 @@ impl Rng {
 }
 
 impl TurboCore for Rng {
-    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
-        self.0.rand::<SIZE>()
-    }
-
-    fn fill_bytes<B: AsMut<[u8]>>(&self, buffer: B) {
+    #[inline]
+    fn fill_bytes(&self, buffer: &mut [u8]) {
         self.0.fill(buffer);
+    }
+}
+
+impl GenCore for Rng {
+    #[inline]
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        self.0.rand()
     }
 }
 
 impl SeededCore for Rng {
     type Seed = u64;
 
+    #[inline]
+    #[must_use]
     fn with_seed(seed: Self::Seed) -> Self {
         Self(WyRand::with_seed(seed << 1 | 1))
     }
 
+    #[inline]
     fn reseed(&self, seed: Self::Seed) {
         self.0.reseed(seed);
     }
@@ -166,12 +173,17 @@ impl Clone for AtomicRng {
 
 #[cfg(feature = "atomic")]
 impl TurboCore for AtomicRng {
-    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
-        self.0.rand::<SIZE>()
-    }
-
-    fn fill_bytes<B: AsMut<[u8]>>(&self, buffer: B) {
+    #[inline]
+    fn fill_bytes(&self, buffer: &mut [u8]) {
         self.0.fill(buffer);
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl GenCore for AtomicRng {
+    #[inline]
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        self.0.rand()
     }
 }
 
@@ -179,10 +191,13 @@ impl TurboCore for AtomicRng {
 impl SeededCore for AtomicRng {
     type Seed = u64;
 
+    #[inline]
+    #[must_use]
     fn with_seed(seed: Self::Seed) -> Self {
         Self(WyRand::with_seed(seed << 1 | 1))
     }
 
+    #[inline]
     fn reseed(&self, seed: Self::Seed) {
         self.0.reseed(seed);
     }

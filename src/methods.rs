@@ -3,7 +3,7 @@ macro_rules! gen_int_const {
         #[doc = $doc]
         #[inline]
         fn $func(&self) -> $int {
-            <$int>::from_le_bytes(self.gen::<{ core::mem::size_of::<$int>() }>())
+            <$int>::from_le_bytes(self.gen())
         }
     };
 }

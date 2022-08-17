@@ -1,6 +1,6 @@
 //! Compatibility shims for the `rand` crate ecosystem.
 
-use crate::{traits::TurboCore, RngCore};
+use crate::{traits::{TurboCore, GenCore}, RngCore};
 
 #[cfg(feature = "wyrand")]
 use crate::rng::Rng;
@@ -16,9 +16,9 @@ use crate::rng::AtomicRng;
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandCompat<T: TurboCore + Default>(T);
+pub struct RandCompat<T: TurboCore + GenCore + Default>(T);
 
-impl<T: TurboCore + Default> RandCompat<T> {
+impl<T: TurboCore + GenCore + Default> RandCompat<T> {
     /// Creates a new [`RandCompat`] with a randomised seed.
     ///
     /// # Example
@@ -40,7 +40,7 @@ impl<T: TurboCore + Default> RandCompat<T> {
     }
 }
 
-impl<T: TurboCore + Default> Default for RandCompat<T> {
+impl<T: TurboCore + GenCore + Default> Default for RandCompat<T> {
     /// Initialises a default instance of [`RandCompat`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
@@ -60,7 +60,7 @@ impl<T: TurboCore + Default> Default for RandCompat<T> {
     }
 }
 
-impl<T: TurboCore + Default> RngCore for RandCompat<T> {
+impl<T: TurboCore + GenCore + Default> RngCore for RandCompat<T> {
     #[inline]
     fn next_u32(&mut self) -> u32 {
         self.0.gen_u32()
@@ -83,7 +83,7 @@ impl<T: TurboCore + Default> RngCore for RandCompat<T> {
     }
 }
 
-impl<T: TurboCore + Default> From<T> for RandCompat<T> {
+impl<T: TurboCore + GenCore + Default> From<T> for RandCompat<T> {
     #[inline]
     fn from(rng: T) -> Self {
         Self(rng)
@@ -123,9 +123,9 @@ impl From<RandCompat<SecureRng>> for SecureRng {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandBorrowed<'a, T: TurboCore + Default>(&'a mut T);
+pub struct RandBorrowed<'a, T: TurboCore + GenCore + Default>(&'a mut T);
 
-impl<'a, T: TurboCore + Default> From<&'a mut T> for RandBorrowed<'a, T> {
+impl<'a, T: TurboCore + GenCore + Default> From<&'a mut T> for RandBorrowed<'a, T> {
     /// Convert a [`TurboCore`] reference into a [`RandBorrowed`] struct,
     /// allowing a borrowed reference to be used with the `rand` crate
     /// ecosystem.
@@ -147,7 +147,7 @@ impl<'a, T: TurboCore + Default> From<&'a mut T> for RandBorrowed<'a, T> {
     }
 }
 
-impl<'a, T: TurboCore + Default> RngCore for RandBorrowed<'a, T> {
+impl<'a, T: TurboCore + GenCore + Default> RngCore for RandBorrowed<'a, T> {
     #[inline]
     fn next_u32(&mut self) -> u32 {
         self.0.gen_u32()

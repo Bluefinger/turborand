@@ -43,10 +43,10 @@
 //!
 //! # Features
 //!
-//! The base crate will always export the [`TurboCore`], [`SeededCore`],
-//! [`TurboRand`] and [`SecureCore`] traits, and will do so when set as
-//! `default-features = false` in the Cargo.toml. By default, it will
-//! have `wyrand` feature enabled as the basic PRNG exposed.
+//! The base crate will always export the [`TurboCore`], [`GenCore`],
+//! [`SeededCore`], [`TurboRand`] and [`SecureCore`] traits, and will do
+//! so when set as `default-features = false` in the Cargo.toml. By default,
+//! it will have `wyrand` feature enabled as the basic PRNG exposed.
 //!
 //! * **`wyrand`** - Enables [`rng::Rng`], so to provide a
 //!   basic, non-threadsafe PRNG. Enabled by default.
@@ -109,6 +109,6 @@ pub mod secure_rng;
 mod source;
 mod traits;
 
-pub use traits::{SecureCore, SeededCore, TurboCore, TurboRand};
+pub use traits::{GenCore, SecureCore, SeededCore, TurboCore, TurboRand};
 
 pub mod prelude;

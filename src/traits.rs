@@ -3,11 +3,11 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-/// Base trait for implementing a PRNG. Two methods must be
-/// implemented: [`TurboCore::gen`] and [`TurboCore::fill_bytes`].
-/// Once implemented, the rest of the trait provides default
-/// implementations for generating all integer type, though it is not
-/// recommended to override these.
+/// Base trait for implementing a PRNG. Only one method must be
+/// implemented: [`TurboCore::fill_bytes`], which provides the basis
+/// for any PRNG, to fill a buffer of bytes with random data.
+///
+/// This trait is object-safe.
 ///
 /// # General Notes
 ///
@@ -32,21 +32,7 @@ use std::{
 ///   copy is made, this modifies the state of the original in
 ///   producing the new state of the copied instance, which is not
 ///   something you want to happen implicitly.
-pub trait TurboCore: Sized {
-    /// Returns an array of constant `SIZE` containing random `u8` values.
-    ///
-    /// # Example
-    /// ```
-    /// use turborand::prelude::*;
-    ///
-    /// let rand = Rng::with_seed(Default::default());
-    ///
-    /// let bytes = rand.gen::<10>();
-    ///
-    /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
-    /// ```
-    fn gen<const SIZE: usize>(&self) -> [u8; SIZE];
-
+pub trait TurboCore {
     /// Fills a mutable buffer with random bytes.
     ///
     /// # Example
@@ -61,7 +47,32 @@ pub trait TurboCore: Sized {
     ///
     /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
     /// ```
-    fn fill_bytes<B: AsMut<[u8]>>(&self, buffer: B);
+    fn fill_bytes(&self, buffer: &mut [u8]);
+}
+
+/// This trait provides the means to easily generate all integer types, provided
+/// the main method underpinning this is implemented: [`GenCore::gen`].
+/// Once implemented, the rest of the trait provides default
+/// implementations for generating all integer types, though it is not
+/// recommended to override these.
+///
+/// The underlying implementation of [`GenCore::gen`] does not have to rely on
+/// [`TurboCore::fill_bytes`] if the PRNG implementation provides a means to
+/// output directly an array of const size.
+pub trait GenCore: TurboCore {
+    /// Returns an array of constant `SIZE` containing random `u8` values.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rand = Rng::with_seed(Default::default());
+    ///
+    /// let bytes = rand.gen::<10>();
+    ///
+    /// assert_ne!(&bytes, &[0u8; 10], "output should not match a zeroed array");
+    /// ```
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE];
 
     gen_int_const!(gen_u128, u128, "Returns a random `u128` value.");
     gen_int_const!(gen_i128, i128, "Returns a random `i128` value.");
@@ -101,12 +112,11 @@ pub trait SeededCore: TurboCore {
 pub trait SecureCore: TurboCore {}
 
 /// Extension trait for automatically implementing all [`TurboRand`] methods,
-/// as long as the struct implements [`TurboCore`]. All methods are provided
-/// as default implementations that build on top of [`TurboCore`] as well as
-/// some methods defined within [`TurboRand`] and thus are not recommended to
-/// be overridden, lest you potentially change the expected outcome of the
-/// methods.
-pub trait TurboRand: TurboCore {
+/// as long as the struct implements [`TurboCore`] & [`GenCore`]. All methods
+/// are provided as default implementations that build on top of [`TurboCore`]
+/// and [`GenCore`], and thus are not recommended to be overridden, lest you
+/// potentially change the expected outcome of the methods.
+pub trait TurboRand: TurboCore + GenCore {
     /// Returns a random `u128` within a given range bound.
     ///
     /// # Panics
@@ -559,7 +569,51 @@ pub trait TurboRand: TurboCore {
     }
 }
 
-impl<T: TurboCore> TurboRand for T {}
+impl<T: TurboCore + GenCore + ?Sized> TurboRand for T {}
+
+impl<T: TurboCore + ?Sized> TurboCore for Box<T> {
+    #[inline(always)]
+    fn fill_bytes(&self, buffer: &mut [u8]) {
+        (**self).fill_bytes(buffer);
+    }
+}
+
+impl<T: GenCore + ?Sized> GenCore for Box<T> {
+    #[inline(always)]
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        (**self).gen()
+    }
+}
+
+impl<'a, T: TurboCore + ?Sized> TurboCore for &'a T {
+    #[inline(always)]
+    fn fill_bytes(&self, buffer: &mut [u8]) {
+        (**self).fill_bytes(buffer);
+    }
+}
+
+impl<'a, T: GenCore + ?Sized> GenCore for &'a T {
+    #[inline(always)]
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        (**self).gen()
+    }
+}
+
+impl<'a, T: TurboCore + ?Sized> TurboCore for &'a mut T {
+    #[inline(always)]
+    fn fill_bytes(&self, buffer: &mut [u8]) {
+        (**self).fill_bytes(buffer);
+    }
+}
+
+impl<'a, T: GenCore + ?Sized> GenCore for &'a mut T {
+    #[inline(always)]
+    fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
+        (**self).gen()
+    }
+}
+
+impl<T: TurboCore + SecureCore + ?Sized> SecureCore for Box<T> {}
 
 /// Computes `(a * b) >> 128`. Adapted from: https://stackoverflow.com/a/28904636
 #[inline]
@@ -604,14 +658,14 @@ mod tests {
     }
 
     impl TurboCore for TestRng {
+        fn fill_bytes(&self, buffer: &mut [u8]) {
+            buffer.iter_mut().for_each(|slot| *slot = self.next());
+        }
+    }
+
+    impl GenCore for TestRng {
         fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
             std::array::from_fn(|_| self.next())
-        }
-
-        fn fill_bytes<B: AsMut<[u8]>>(&self, mut buffer: B) {
-            let buffer = buffer.as_mut();
-
-            buffer.iter_mut().for_each(|slot| *slot = self.next());
         }
     }
 
@@ -644,7 +698,7 @@ mod tests {
     fn seeded_methods() {
         let rng = TestRng::with_seed(5);
 
-        fn test_seeded_methods<T: SeededCore>(source: &T) where T: SeededCore<Seed = u8> {
+        fn test_seeded_methods<T: GenCore + SeededCore>(source: &T) where T: SeededCore<Seed = u8> {
             let values = source.gen();
 
             assert_eq!(&values, &[5, 6, 7]);
@@ -657,5 +711,45 @@ mod tests {
         }
 
         test_seeded_methods(&rng);
+    }
+
+    #[test]
+    fn object_safe_core() {
+        let rng = Box::new(TestRng::with_seed(1));
+
+        fn test_dyn_rng(rng: Box<dyn TurboCore>) {
+            let mut buffer = [0u8; 3];
+
+            rng.fill_bytes(&mut buffer);
+
+            assert_eq!(&buffer, &[1, 2, 3]);
+        }
+
+        test_dyn_rng(rng);
+    }
+
+    #[test]
+    fn boxed_methods() {
+        let rng = Box::new(TestRng::with_seed(1));
+
+        assert_eq!(&rng.gen(), &[1, 2]);
+
+        fn test_boxed_turborand<T: TurboRand>(boxed: T) {
+            assert_eq!(boxed.u8(..), 3);
+        }
+
+        test_boxed_turborand(rng);
+    }
+
+    #[test]
+    fn ref_methods() {
+        let mut rng = TestRng::with_seed(1);
+
+        fn test_ref_methods<T: GenCore>(reffed: T, expected: [u8; 3]) {
+            assert_eq!(reffed.gen(), expected);
+        }
+
+        test_ref_methods(&rng, [1, 2, 3]);
+        test_ref_methods(&mut rng, [4, 5, 6]);
     }
 }

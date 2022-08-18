@@ -6,7 +6,7 @@ use crate::{traits::{TurboCore, GenCore}, RngCore};
 use crate::rng::Rng;
 
 #[cfg(feature = "chacha")]
-use crate::secure_rng::SecureRng;
+use crate::chacha_rng::ChaChaRng;
 
 #[cfg(feature = "atomic")]
 use crate::rng::AtomicRng;
@@ -107,9 +107,9 @@ impl From<RandCompat<AtomicRng>> for AtomicRng {
 }
 
 #[cfg(feature = "chacha")]
-impl From<RandCompat<SecureRng>> for SecureRng {
+impl From<RandCompat<ChaChaRng>> for ChaChaRng {
     #[inline]
-    fn from(rand: RandCompat<SecureRng>) -> Self {
+    fn from(rand: RandCompat<ChaChaRng>) -> Self {
         rand.0
     }
 }

@@ -8,7 +8,7 @@ pub use crate::{internal::*, rng::*};
 
 #[cfg(feature = "chacha")]
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
-pub use crate::secure_rng::*;
+pub use crate::chacha_rng::*;
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]

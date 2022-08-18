@@ -56,9 +56,9 @@
 //! * **`rand`** - Provides [`compatibility::RandCompat`], which implements [`RngCore`]
 //!   so to allow for compatibility with `rand` ecosystem of crates
 //! * **`serialize`** - Enables [`Serialize`] and [`Deserialize`] derives on [`rng::Rng`],
-//!   [`rng::AtomicRng`] and [`secure_rng::SecureRng`], provided they have their
+//!   [`rng::AtomicRng`] and [`chacha_rng::ChaChaRng`], provided they have their
 //!   respective features activated as well.
-//! * **`chacha`** - Enables [`secure_rng::SecureRng`] for providing a more cryptographically
+//! * **`chacha`** - Enables [`chacha_rng::ChaChaRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`rng::Rng`] in
 //!   throughput, but will produce much higher quality randomness.
 #![warn(missing_docs, rust_2018_idioms)]
@@ -105,7 +105,7 @@ mod internal;
 pub mod rng;
 #[cfg(feature = "chacha")]
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
-pub mod secure_rng;
+pub mod chacha_rng;
 mod source;
 mod traits;
 

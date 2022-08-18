@@ -349,8 +349,8 @@ fn fill_bytes_smoke_testing() {
 #[cfg(feature = "chacha")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn secure_rng_smoke_test() {
-    let rand = SecureRng::with_seed([0u8; 40]);
+fn chacha_rng_smoke_test() {
+    let rand = ChaChaRng::with_seed([0u8; 40]);
 
     let value = rand.u64(5..=10);
 
@@ -376,8 +376,8 @@ fn secure_rng_smoke_test() {
 #[cfg(feature = "chacha")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn secure_rng_spread_test() {
-    let rng = SecureRng::with_seed([0u8; 40]);
+fn chacha_rng_spread_test() {
+    let rng = ChaChaRng::with_seed([0u8; 40]);
 
     let actual_histogram: BTreeMap<u32, u32> =
         repeat_with(|| rng.u32(1..=10))

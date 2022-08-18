@@ -11,10 +11,10 @@ use crate::{Deserialize, Serialize};
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct SecureRng(ChaCha8);
+pub struct ChaChaRng(ChaCha8);
 
-impl SecureRng {
-    /// Creates a new [`SecureRng`] with a randomised seed.
+impl ChaChaRng {
+    /// Creates a new [`ChaChaRng`] with a randomised seed.
     #[inline]
     #[must_use]
     pub fn new() -> Self {
@@ -28,21 +28,21 @@ impl SecureRng {
     }
 }
 
-impl TurboCore for SecureRng {
+impl TurboCore for ChaChaRng {
     #[inline]
     fn fill_bytes(&self, buffer: &mut [u8]) {
         self.0.fill(buffer);
     }
 }
 
-impl GenCore for SecureRng {
+impl GenCore for ChaChaRng {
     #[inline]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         self.0.rand()
     }
 }
 
-impl SeededCore for SecureRng {
+impl SeededCore for ChaChaRng {
     type Seed = [u8; 40];
 
     #[inline]
@@ -57,18 +57,18 @@ impl SeededCore for SecureRng {
     }
 }
 
-impl SecureCore for SecureRng {}
+impl SecureCore for ChaChaRng {}
 
-impl Default for SecureRng {
-    /// Initialises a default instance of [`SecureRng`]. Warning, the default is
+impl Default for ChaChaRng {
+    /// Initialises a default instance of [`ChaChaRng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
     ///
     /// # Example
     /// ```
     /// use turborand::prelude::*;
     ///
-    /// let rng1 = SecureRng::default();
-    /// let rng2 = SecureRng::default();
+    /// let rng1 = ChaChaRng::default();
+    /// let rng2 = ChaChaRng::default();
     ///
     /// assert_ne!(rng1.u64(..), rng2.u64(..));
     /// ```
@@ -78,16 +78,16 @@ impl Default for SecureRng {
     }
 }
 
-impl Clone for SecureRng {
-    /// Clones the [`SecureRng`] by deterministically deriving a new [`SecureRng`] based on the initial
+impl Clone for ChaChaRng {
+    /// Clones the [`ChaChaRng`] by deterministically deriving a new [`ChaChaRng`] based on the initial
     /// seed.
     ///
     /// # Example
     /// ```
     /// use turborand::prelude::*;
     ///
-    /// let rng1 = SecureRng::with_seed([0u8; 40]);
-    /// let rng2 = SecureRng::with_seed([0u8; 40]);
+    /// let rng1 = ChaChaRng::with_seed([0u8; 40]);
+    /// let rng2 = ChaChaRng::with_seed([0u8; 40]);
     ///
     /// // Use the RNGs once each.
     /// rng1.bool();
@@ -104,7 +104,7 @@ impl Clone for SecureRng {
 }
 
 thread_local! {
-    static SECURE: Rc<SecureRng> = Rc::new(SecureRng::with_seed(generate_entropy::<40>()));
+    static SECURE: Rc<ChaChaRng> = Rc::new(ChaChaRng::with_seed(generate_entropy::<40>()));
 }
 
 #[cfg(test)]
@@ -113,9 +113,9 @@ mod tests {
 
     #[test]
     fn no_leaking_debug() {
-        let rng = SecureRng::with_seed([0u8; 40]);
+        let rng = ChaChaRng::with_seed([0u8; 40]);
 
-        assert_eq!(format!("{:?}", rng), "SecureRng(ChaCha8)");
+        assert_eq!(format!("{:?}", rng), "ChaChaRng(ChaCha8)");
     }
 
     #[cfg(feature = "serialize")]
@@ -123,12 +123,12 @@ mod tests {
     fn serde_tokens() {
         use serde_test::{assert_tokens, Token};
 
-        let rng = SecureRng::with_seed([0u8; 40]);
+        let rng = ChaChaRng::with_seed([0u8; 40]);
 
         assert_tokens(
             &rng,
             &[
-                Token::NewtypeStruct { name: "SecureRng" },
+                Token::NewtypeStruct { name: "ChaChaRng" },
                 Token::Struct {
                     name: "ChaCha8",
                     len: 2,
@@ -172,7 +172,7 @@ mod tests {
         assert_tokens(
             &rng,
             &[
-                Token::NewtypeStruct { name: "SecureRng" },
+                Token::NewtypeStruct { name: "ChaChaRng" },
                 Token::Struct {
                     name: "ChaCha8",
                     len: 2,

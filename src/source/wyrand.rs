@@ -34,8 +34,9 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
 
     #[inline]
     fn generate(&self) -> [u8; core::mem::size_of::<u64>()] {
-        let state = self.state.get().wrapping_add(0xa076_1d64_78bd_642f);
-        self.state.set(state);
+        let state = self
+            .state
+            .update(|value| value.wrapping_add(0xa076_1d64_78bd_642f));
         let t = u128::from(state).wrapping_mul(u128::from(state ^ 0xe703_7ed1_a0b4_28db));
         let ret = (t.wrapping_shr(64) ^ t) as u64;
         ret.to_le_bytes()
@@ -45,7 +46,7 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
     #[inline]
     pub(crate) fn rand<const SIZE: usize>(&self) -> [u8; SIZE] {
         let mut output = [0u8; SIZE];
-        
+
         self.fill(&mut output);
 
         output

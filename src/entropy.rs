@@ -34,7 +34,6 @@ fn fallback_entropy<B: AsMut<[u8]>>(mut buffer: B) -> Result<(), Error> {
 
 /// Generates a random buffer from some OS/Hardware sources
 /// of entropy. Fallback provided in case OS/Hardware sources fail.
-#[inline]
 pub(crate) fn generate_entropy<const SIZE: usize>() -> [u8; SIZE] {
     let mut bytes = [0u8; SIZE];
 

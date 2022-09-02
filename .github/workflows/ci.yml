@@ -47,4 +47,4 @@ jobs:
           rustup override set nightly
           cargo miri setup
       - name: Test with Miri
-        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test --all-features
+        run: MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-strict-provenance" cargo miri test --all-features

@@ -41,8 +41,7 @@ const fn pack_into_u32(input: &[u8]) -> u32 {
 }
 
 #[inline]
-pub(super) fn init_state<S: Into<AlignedSeed>>(seed: S) -> [u32; 16] {
-    let seed: AlignedSeed = seed.into();
+pub(super) fn init_state(seed: AlignedSeed) -> [u32; 16] {
     [
         pack_into_u32(&INITIAL_STATE[..4]),
         pack_into_u32(&INITIAL_STATE[4..8]),
@@ -82,10 +81,11 @@ fn quarter_round<const A: usize, const B: usize, const C: usize, const D: usize>
     add_xor_rotate::<C, D, B, 7>(input);
 }
 
-pub(super) fn calculate_block<const DOUBLE_ROUNDS: usize>(state: [u32; 16]) -> [u32; 16] {
+#[inline]
+pub(super) fn calculate_block<const DOUBLE_ROUNDS: usize>(state: &[u32; 16]) -> [u32; 16] {
     assert!(DOUBLE_ROUNDS % 2 == 0, "DOUBLE_ROUNDS must be even number");
 
-    let mut new_state = state;
+    let mut new_state = *state;
 
     // 8 Rounds of ChaCha, 4 loops * 2 rounds per loop = 8 Rounds
     for _ in 0..DOUBLE_ROUNDS {
@@ -104,7 +104,7 @@ pub(super) fn calculate_block<const DOUBLE_ROUNDS: usize>(state: [u32; 16]) -> [
     new_state
         .iter_mut()
         .zip(state.iter())
-        .for_each(|(new, old)| *new = new.wrapping_add(*old));
+        .for_each(|(new, &old)| *new = new.wrapping_add(old));
 
     new_state
 }
@@ -140,7 +140,7 @@ mod tests {
             0x4a000000, 0x00000000,
         ];
 
-        let state = calculate_block::<10>(state);
+        let state = calculate_block::<10>(&state);
 
         let expected_state: [u32; 16] = [
             0xf3514f22, 0xe1d91b40, 0x6f27de2f, 0xed1d63b8, 0x821f138c, 0xe2062c3d, 0xecca4f7e,

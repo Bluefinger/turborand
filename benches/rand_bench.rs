@@ -87,7 +87,9 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
 #[cfg(feature = "atomic")]
 fn turborand_atomic_benchmark(c: &mut Criterion) {
-    c.bench_function("AtomicRng new", |b| b.iter(|| black_box(AtomicRng::default())));
+    c.bench_function("AtomicRng new", |b| {
+        b.iter(|| black_box(AtomicRng::default()))
+    });
     c.bench_function("AtomicRng clone", |b| {
         let rand = AtomicRng::default();
         b.iter(|| black_box(rand.clone()))

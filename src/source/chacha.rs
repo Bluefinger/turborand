@@ -7,73 +7,72 @@ use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
 use crate::{Deserialize, Serialize, SerializeStruct, Visitor};
 
 mod constants;
-mod utils;
+pub(crate) mod utils;
 
 /// A ChaCha8 based Random Number Generator
 pub(crate) struct ChaCha8 {
     state: UnsafeCell<[u32; 16]>,
-    cache: UnsafeCell<EntropyBuffer<64>>,
+    cache: EntropyBuffer<8>,
 }
 
 impl ChaCha8 {
     #[cfg(feature = "serialize")]
     #[inline]
-    fn from_serde(state: [u32; 16], cache: EntropyBuffer<64>) -> Self {
+    #[must_use]
+    fn from_serde(state: [u32; 16], cache: EntropyBuffer<8>) -> Self {
         Self {
             state: UnsafeCell::new(state),
-            cache: UnsafeCell::new(cache),
+            cache,
         }
     }
 
     #[inline]
-    pub(crate) fn with_seed<S: Into<AlignedSeed>>(seed: S) -> Self {
-        Self {
-            state: UnsafeCell::new(init_state(seed)),
-            cache: UnsafeCell::new(EntropyBuffer::<64>::new()),
-        }
+    #[must_use]
+    fn get_state(&self) -> &[u32; 16] {
+        // SAFETY: The memory being read will always be initialised,
+        // therefore this is safe. This reference is used in only three cases,
+        // in which all will never exist for long enough to overlap with a write.
+        // This can also cause data races if called from different threads,
+        // but ChaCha8 is not Sync, so this won't happen.
+        unsafe { &*self.state.get() }
     }
 
     #[inline]
-    pub(crate) fn reseed<S: Into<AlignedSeed>>(&self, seed: S) {
-        let state = init_state(seed);
-        // SAFETY: Pointers are kept here only for as long as the write happens,
+    fn update_state(&self, state: [u32; 16]) {
+        // SAFETY: Pointer is kept here only for as long as the write happens,
         // with the array of data not needing to be dropped and instead it being
-        // fine for being overwritten. Also, this is one of two places where a mutable
-        // reference to EntropyBuffer is created, but each call that creates said
-        // reference will never overlap/alias as they are always called separately,
-        // and in each method, the pointers last only long enough to call a single
-        // method. The EntropyBuffer is always initialised so there will never be
-        // a null pointer, so this is safe.
+        // fine for being overwritten. This can also cause data races if called
+        // from different threads, but ChaCha8 is not Sync, so this won't happen.
         unsafe {
             self.state.get().write(state);
-            (&mut *self.cache.get()).empty_buffer();
         }
     }
 
     #[inline]
+    #[must_use]
+    pub(crate) fn with_seed(seed: AlignedSeed) -> Self {
+        Self {
+            state: UnsafeCell::new(init_state(seed)),
+            cache: EntropyBuffer::new(),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn reseed(&self, seed: AlignedSeed) {
+        let state = init_state(seed);
+
+        self.update_state(state);
+        self.cache.empty_buffer();
+    }
+
     fn generate(&self) -> [u32; 16] {
-        // SAFETY: Pointer is kept here only for as long as the read happens. The memory
-        // being read will always be initialised, therefore this is safe.
-        let new_state = unsafe { calculate_block::<4>(self.state.get().read()) };
+        let new_state = calculate_block::<4>(self.get_state());
 
         let output = new_state;
 
         increment_counter(new_state).map_or_else(
-            || {
-                let new_state = init_state(generate_entropy::<40>());
-                // SAFETY: Pointer is kept here only for as long as the write happens,
-                // with the array of data not needing to be dropped and instead it being
-                // fine for being overwritten.
-                unsafe {
-                    self.state.get().write(new_state);
-                }
-            },
-            // SAFETY: Pointer is kept here only for as long as the write happens,
-            // with the array of data not needing to be dropped and instead it being
-            // fine for being overwritten.
-            |updated_state| unsafe {
-                self.state.get().write(updated_state);
-            },
+            || self.update_state(init_state(generate_entropy().into())),
+            |updated_state| self.update_state(updated_state),
         );
 
         output
@@ -90,22 +89,16 @@ impl ChaCha8 {
 
     #[inline]
     pub(crate) fn fill<B: AsMut<[u8]>>(&self, buffer: B) {
-        // SAFETY: This is one of two places where a mutable reference to EntropyBuffer
-        // is created, but each call that creates said reference will never overlap/alias
-        // as they are always called separately, and in each method, the pointers last
-        // only long enough to call a single method. The EntropyBuffer is always
-        // initialised so there will never be a null pointer, so this is safe.
-        let cache = unsafe { &mut *self.cache.get() };
-
-        cache.fill_bytes_with_source(buffer, || self.generate());
+        self.cache
+            .fill_bytes_with_source(buffer, || bytemuck::cast(self.generate()))
     }
 }
 
 impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: UnsafeCell::new(init_state(self.rand::<40>())),
-            cache: UnsafeCell::new(EntropyBuffer::<64>::new()),
+            state: UnsafeCell::new(init_state(self.rand().into())),
+            cache: EntropyBuffer::new(),
         }
     }
 }
@@ -118,18 +111,7 @@ impl Debug for ChaCha8 {
 
 impl PartialEq for ChaCha8 {
     fn eq(&self, other: &Self) -> bool {
-        // SAFETY: All values being read here are always initialised and are
-        // not being mutated nor are there existing mutable references, therefore
-        // it is safe to cast to immutable references.
-        unsafe {
-            let state = &*self.state.get();
-            let cache = &*self.cache.get();
-
-            let other_state = &*other.state.get();
-            let other_cache = &*other.cache.get();
-
-            state == other_state && cache == other_cache
-        }
+        self.get_state() == other.get_state() && self.cache == other.cache
     }
 }
 
@@ -141,21 +123,11 @@ impl Serialize for ChaCha8 {
     where
         S: serde::Serializer,
     {
-        // SAFETY: The RNG should not be getting mutated/modified
-        // at the same time as it is being serialized, and the
-        // pointers will be pointing to data that has been
-        // initialised. Casting to immutable references is therefore
-        // safe.
-        unsafe {
-            let state = &*self.state.get();
-            let cache = &*self.cache.get();
+        let mut s = serializer.serialize_struct("ChaCha8", 2)?;
+        s.serialize_field("state", self.get_state())?;
+        s.serialize_field("cache", &self.cache)?;
 
-            let mut s = serializer.serialize_struct("ChaCha8", 2)?;
-            s.serialize_field("state", state)?;
-            s.serialize_field("cache", cache)?;
-
-            s.end()
-        }
+        s.end()
     }
 }
 
@@ -234,7 +206,7 @@ mod tests {
         ($test:ident, $seed:tt, $output1:tt) => {
             #[test]
             fn $test() {
-                let source = ChaCha8::with_seed($seed);
+                let source = ChaCha8::with_seed($seed.into());
 
                 let expected_output: [u8; 64] = $output1;
                 let output = source.rand::<64>();
@@ -246,15 +218,15 @@ mod tests {
 
     #[test]
     fn no_leaking_debug() {
-        let source = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40].into());
 
         assert_eq!(format!("{:?}", source), "ChaCha8");
     }
 
     #[test]
     fn equality_check() {
-        let source = ChaCha8::with_seed([0u8; 40]);
-        let source2 = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40].into());
+        let source2 = ChaCha8::with_seed([0u8; 40].into());
 
         assert_eq!(
             source, source2,
@@ -278,11 +250,11 @@ mod tests {
 
     #[test]
     fn reseed() {
-        let source = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40].into());
 
         let value1 = source.rand::<4>();
 
-        source.reseed([0u8; 40]);
+        source.reseed([0u8; 40].into());
 
         let value2 = source.rand::<4>();
 
@@ -294,7 +266,7 @@ mod tests {
 
     #[test]
     fn buffered_rand() {
-        let source = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40].into());
 
         let output = source.rand::<40>();
 
@@ -321,7 +293,7 @@ mod tests {
 
     #[test]
     fn stress_rand_buffer() {
-        let source = ChaCha8::with_seed([0u8; 40]);
+        let source = ChaCha8::with_seed([0u8; 40].into());
 
         let mut output = [0u8; 40];
 

@@ -22,7 +22,7 @@ use crate::Visitor;
 #[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 pub trait State: Sized {
     /// Seed Associated Type, must be `Sized` and `Default`.
-    type Seed: Sized + Default;
+    type Seed: Sized + Default + Copy;
     /// Initialise a state with a seed value.
     fn with_seed(seed: Self::Seed) -> Self
     where
@@ -31,6 +31,13 @@ pub trait State: Sized {
     fn get(&self) -> Self::Seed;
     /// Set the state with a new value.
     fn set(&self, value: Self::Seed);
+    /// Update the internal state and return the new, resulting value
+    #[inline]
+    fn update<F: Fn(Self::Seed) -> Self::Seed>(&self, updater: F) -> Self::Seed {
+        let new_value = updater(self.get());
+        self.set(new_value);
+        new_value
+    }
 }
 
 /// Non-[`Send`] and [`Sync`] state for `Rng`. Stores the current

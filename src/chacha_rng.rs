@@ -1,7 +1,10 @@
 //! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
-    entropy::generate_entropy, source::chacha::ChaCha8, Rc, SecureCore, SeededCore, TurboCore, GenCore,
+    entropy::generate_entropy, source::chacha::ChaCha8, GenCore, Rc, SecureCore, SeededCore,
+    TurboCore,
 };
+
+use crate::source::chacha::utils::AlignedSeed;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
@@ -48,12 +51,12 @@ impl SeededCore for ChaChaRng {
     #[inline]
     #[must_use]
     fn with_seed(seed: Self::Seed) -> Self {
-        Self(ChaCha8::with_seed(seed))
+        Self(ChaCha8::with_seed(AlignedSeed::from(seed)))
     }
 
     #[inline]
     fn reseed(&self, seed: Self::Seed) {
-        self.0.reseed(seed);
+        self.0.reseed(AlignedSeed::from(seed));
     }
 }
 
@@ -104,7 +107,7 @@ impl Clone for ChaChaRng {
 }
 
 thread_local! {
-    static SECURE: Rc<ChaChaRng> = Rc::new(ChaChaRng::with_seed(generate_entropy::<40>()));
+    static SECURE: Rc<ChaChaRng> = Rc::new(ChaChaRng::with_seed(generate_entropy()));
 }
 
 #[cfg(test)]
@@ -153,16 +156,17 @@ mod tests {
                 Token::U32(0),
                 Token::TupleEnd,
                 Token::BorrowedStr("cache"),
-                Token::Struct {
-                    name: "EntropyBuffer",
-                    len: 2,
-                },
-                Token::BorrowedStr("buffer"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::BorrowedStr("cursor"),
+                Token::Tuple { len: 9 },
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
+                Token::U64(0),
                 Token::U64(64),
-                Token::StructEnd,
+                Token::TupleEnd,
                 Token::StructEnd,
             ],
         );
@@ -197,80 +201,17 @@ mod tests {
                 Token::U32(1123945486),
                 Token::TupleEnd,
                 Token::BorrowedStr("cache"),
-                Token::Struct {
-                    name: "EntropyBuffer",
-                    len: 2,
-                },
-                Token::BorrowedStr("buffer"),
-                Token::Seq { len: Some(64) },
-                Token::U8(62),
-                Token::U8(0),
-                Token::U8(239),
-                Token::U8(47),
-                Token::U8(137),
-                Token::U8(95),
-                Token::U8(64),
-                Token::U8(214),
-                Token::U8(127),
-                Token::U8(91),
-                Token::U8(184),
-                Token::U8(232),
-                Token::U8(31),
-                Token::U8(9),
-                Token::U8(165),
-                Token::U8(161),
-                Token::U8(44),
-                Token::U8(132),
-                Token::U8(14),
-                Token::U8(195),
-                Token::U8(206),
-                Token::U8(154),
-                Token::U8(127),
-                Token::U8(59),
-                Token::U8(24),
-                Token::U8(27),
-                Token::U8(225),
-                Token::U8(136),
-                Token::U8(239),
-                Token::U8(113),
-                Token::U8(26),
-                Token::U8(30),
-                Token::U8(152),
-                Token::U8(76),
-                Token::U8(225),
-                Token::U8(114),
-                Token::U8(185),
-                Token::U8(33),
-                Token::U8(111),
-                Token::U8(65),
-                Token::U8(159),
-                Token::U8(68),
-                Token::U8(83),
-                Token::U8(103),
-                Token::U8(69),
-                Token::U8(109),
-                Token::U8(86),
-                Token::U8(25),
-                Token::U8(49),
-                Token::U8(74),
-                Token::U8(66),
-                Token::U8(163),
-                Token::U8(218),
-                Token::U8(134),
-                Token::U8(176),
-                Token::U8(1),
-                Token::U8(56),
-                Token::U8(123),
-                Token::U8(253),
-                Token::U8(184),
-                Token::U8(14),
-                Token::U8(12),
-                Token::U8(254),
-                Token::U8(66),
-                Token::SeqEnd,
-                Token::BorrowedStr("cursor"),
+                Token::Tuple { len: 9 },
+                Token::U64(15438444565445410878),
+                Token::U64(11647726043916688255),
+                Token::U64(4287315583106450476),
+                Token::U64(2169171444139891480),
+                Token::U64(4715024415260232856),
+                Token::U64(1825766843798996127),
+                Token::U64(121745463539026481),
+                Token::U64(4827309107960445752),
                 Token::U64(16),
-                Token::StructEnd,
+                Token::TupleEnd,
                 Token::StructEnd,
             ],
         );

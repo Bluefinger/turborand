@@ -62,6 +62,7 @@
 //!   secure source of Rng. Note, this will be slower than [`rng::Rng`] in
 //!   throughput, but will produce much higher quality randomness.
 #![warn(missing_docs, rust_2018_idioms)]
+#![forbid(clippy::undocumented_unsafe_blocks)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 
@@ -86,13 +87,16 @@ use serde::{Deserialize, Serialize};
 use serde::de::Visitor;
 
 #[cfg(all(feature = "serialize", feature = "chacha"))]
-use serde::ser::SerializeStruct;
+use serde::ser::{SerializeStruct, SerializeTuple};
 
 #[macro_use]
 mod methods;
 
 #[cfg(feature = "chacha")]
 mod buffer;
+#[cfg(feature = "chacha")]
+#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
+pub mod chacha_rng;
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub mod compatibility;
@@ -103,9 +107,6 @@ mod internal;
 #[cfg(any(feature = "wyrand", feature = "atomic"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "wyrand", feature = "atomic"))))]
 pub mod rng;
-#[cfg(feature = "chacha")]
-#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
-pub mod chacha_rng;
 mod source;
 mod traits;
 

@@ -349,9 +349,9 @@ pub trait TurboRand: TurboCore + GenCore {
     fn sample<'a, T>(&self, list: &'a [T]) -> Option<&'a T> {
         match list.len() {
             0 => None,
-            // SOUND: Length already known to be 1, therefore index 0 will yield an item
+            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
             1 => unsafe { Some(list.get_unchecked(0)) },
-            // SOUND: Range is exclusive, so yielded random values will always be a valid index and within bounds
+            // SAFETY: Range is exclusive, so yielded random values will always be a valid index and within bounds
             _ => unsafe { Some(list.get_unchecked(self.usize(..list.len()))) },
         }
     }
@@ -412,7 +412,7 @@ pub trait TurboRand: TurboCore + GenCore {
             // No values in list, therefore return None.
             0 => None,
             // Only a single value in list, therefore sampling will always yield that value.
-            // SOUND: Length already known to be 1, therefore index 0 will yield an item
+            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
             1 => unsafe { Some(list.get_unchecked(0)) },
             // Sample the list, flatten the `Option<&T>` and then check if it passes the
             // weighted chance. Keep repeating until `.find` yields a value.
@@ -698,7 +698,10 @@ mod tests {
     fn seeded_methods() {
         let rng = TestRng::with_seed(5);
 
-        fn test_seeded_methods<T: GenCore + SeededCore>(source: &T) where T: SeededCore<Seed = u8> {
+        fn test_seeded_methods<T: GenCore + SeededCore>(source: &T)
+        where
+            T: SeededCore<Seed = u8>,
+        {
             let values = source.gen();
 
             assert_eq!(&values, &[5, 6, 7]);

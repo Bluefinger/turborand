@@ -62,7 +62,7 @@ macro_rules! trait_float_gen {
         fn $name(&self) -> $value {
             (self.$source() as $value) / (<$int>::MAX as $value)
         }
-    }
+    };
 }
 
 macro_rules! trait_rand_chars {

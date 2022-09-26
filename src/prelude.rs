@@ -4,7 +4,7 @@ pub use crate::traits::*;
 
 #[cfg(any(feature = "wyrand", feature = "atomic"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "wyrand", feature = "atomic"))))]
-pub use crate::{internal::*, rng::*};
+pub use crate::rng::*;
 
 #[cfg(feature = "chacha")]
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]

@@ -57,14 +57,16 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
     #[inline]
     pub fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
         let mut output = buffer.as_mut();
-        let remaining = (output.len() as f32 / core::mem::size_of::<u64>() as f32).ceil() as usize;
+        let iterations = (output.len() as f32 / core::mem::size_of::<u64>() as f32).ceil() as usize;
 
-        for input in repeat_with(|| self.generate()).take(remaining) {
+        for input in repeat_with(|| self.generate()).take(iterations) {
             let fill = output.len().min(input.len());
 
-            output[..fill].copy_from_slice(&input[..fill]);
+            let (target, remainder) = output.split_at_mut(fill);
 
-            output = &mut output[fill..];
+            target.copy_from_slice(&input[..fill]);
+
+            output = remainder;
         }
     }
 }

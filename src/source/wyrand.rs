@@ -1,3 +1,5 @@
+use std::iter::repeat_with;
+
 use crate::{
     internal::{CellState, State},
     Debug,
@@ -55,17 +57,14 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
     #[inline]
     pub fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
         let mut output = buffer.as_mut();
-        let mut remaining = output.len();
+        let remaining = (output.len() as f32 / core::mem::size_of::<u64>() as f32).ceil() as usize;
 
-        while remaining > 0 {
-            let input = self.generate();
+        for input in repeat_with(|| self.generate()).take(remaining) {
             let fill = output.len().min(input.len());
 
             output[..fill].copy_from_slice(&input[..fill]);
 
             output = &mut output[fill..];
-
-            remaining -= fill;
         }
     }
 }

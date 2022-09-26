@@ -20,7 +20,7 @@ use crate::Visitor;
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
 #[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
-pub trait State: Sized {
+pub(crate) trait State: Sized {
     /// Seed Associated Type, must be `Sized` and `Default`.
     type Seed: Sized + Default + Copy;
     /// Initialise a state with a seed value.
@@ -46,7 +46,7 @@ pub trait State: Sized {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[repr(transparent)]
-pub struct CellState(Cell<u64>);
+pub(crate) struct CellState(Cell<u64>);
 
 impl State for CellState {
     type Seed = u64;
@@ -98,7 +98,7 @@ impl Debug for CellState {
 #[cfg(feature = "atomic")]
 #[cfg_attr(docsrs, doc(cfg(all(feature = "wyrand", feature = "atomic"))))]
 #[repr(transparent)]
-pub struct AtomicState(AtomicU64);
+pub(crate) struct AtomicState(AtomicU64);
 
 #[cfg(feature = "atomic")]
 impl State for AtomicState {

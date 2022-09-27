@@ -61,7 +61,7 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     }
 
     /// Updates the buffer with a new array value.
-    /// 
+    ///
     /// **Warning**: Must not be used while a reference to the buffer lives, else
     /// it won't be sound.
     #[inline]

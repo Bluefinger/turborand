@@ -66,9 +66,12 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     /// it won't be sound.
     #[inline]
     fn update_buffer(&self, buffer: [u64; SIZE]) {
-        // SAFETY: We don't need to drop a Copy value and can overwrite it instead.
-        // This can also cause data races if called from different threads,
-        // but EntropyBuffer is not Sync, so this won't happen.
+        // SAFETY: Data is writable and does not need to be dropped, and
+        // the pointer is always valid as it will never point to an allocation
+        // nor will it be null. The pointer only lives long enough to perform
+        // the write operation and is not exposed from this point. This can also
+        // cause data races if called from different threads, but EntropyBuffer
+        // is not Sync, so this won't happen.
         unsafe {
             self.buffer.get().write(buffer);
         }
@@ -76,11 +79,14 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
 
     #[inline]
     fn update_cursor(&self, val: usize) {
-        // SAFETY: Cell::set is slower than just writing to the cell directly,
-        // as we don't need to drop a Copy value and can overwrite it instead.
-        // This can also cause data races if called from different threads,
-        // but EntropyBuffer is not Sync, so this won't happen. Also, no references
-        // to the underlying value exist that could overlap with this write.
+        // SAFETY: Data is writable and does not need to be dropped, and
+        // the pointer is always valid as it will never point to an allocation
+        // nor will it be null. The pointer only lives long enough to perform
+        // the write operation and is not exposed from this point. This can also
+        // cause data races if called from different threads, but EntropyBuffer
+        // is not Sync, so this won't happen. There are no references of the
+        // underlying value ever, only returned/copied values, so this is always
+        // safe to do.
         unsafe {
             self.cursor.get().write(val);
         }

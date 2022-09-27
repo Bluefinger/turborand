@@ -36,7 +36,8 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
         SIZE * core::mem::size_of::<u64>()
     }
 
-    /// Returns a reference to the buffer.
+    /// Returns a reference to the buffer. Meant for avoiding extra copies
+    /// from the underlying data.
     ///
     /// **WARNING**: No references should live while an update to the buffer
     /// is made.
@@ -50,30 +51,38 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
         unsafe { &*self.buffer.get() }
     }
 
-    /// Returns the current value of the cursor
     #[inline]
     fn get_cursor(&self) -> usize {
-        // SAFETY: Data is always initialised and so the deferenced
-        // pointer will yield a valid cursor value and will never return
-        // a value from some other point in memory. This can also cause data races
-        // if called from different threads, but EntropyBuffer is not Sync, so
-        // this won't happen.
+        // SAFETY: Data is always initialised and no mutable references
+        // will exist during the liftime of the returned reference. This
+        // can also cause data races if called from different threads, but
+        // EntropyBuffer is not Sync, so this won't happen.
         unsafe { *self.cursor.get() }
     }
 
-    /// Updates the cursor with a new value.
+    /// Updates the buffer with a new array value.
+    /// 
+    /// **Warning**: Must not be used while a reference to the buffer lives, else
+    /// it won't be sound.
     #[inline]
-    fn update_cursor(&self, cursor: usize) {
-        // SAFETY: Data is writable and does not need to be dropped, and
-        // the pointer is always valid as it will never point to an allocation
-        // nor will it be null. The pointer only lives long enough to perform
-        // the write operation and is not exposed from this point. This can also
-        // cause data races if called from different threads, but EntropyBuffer
-        // is not Sync, so this won't happen. There are no references of the
-        // underlying value ever, only returned/copied values, so this is always
-        // safe to do.
+    fn update_buffer(&self, buffer: [u64; SIZE]) {
+        // SAFETY: We don't need to drop a Copy value and can overwrite it instead.
+        // This can also cause data races if called from different threads,
+        // but EntropyBuffer is not Sync, so this won't happen.
         unsafe {
-            self.cursor.get().write(cursor);
+            self.buffer.get().write(buffer);
+        }
+    }
+
+    #[inline]
+    fn update_cursor(&self, val: usize) {
+        // SAFETY: Cell::set is slower than just writing to the cell directly,
+        // as we don't need to drop a Copy value and can overwrite it instead.
+        // This can also cause data races if called from different threads,
+        // but EntropyBuffer is not Sync, so this won't happen. Also, no references
+        // to the underlying value exist that could overlap with this write.
+        unsafe {
+            self.cursor.get().write(val);
         }
     }
 
@@ -100,8 +109,8 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     /// **WARNING**: Must not be used while a reference to buffer is
     /// alive, else this operation will be unsound.
     #[inline]
-    unsafe fn update_entropy(&self, buffer: [u64; SIZE]) {
-        self.buffer.get().write(buffer);
+    fn update_entropy(&self, buffer: [u64; SIZE]) {
+        self.update_buffer(buffer);
         self.update_cursor(0);
     }
 
@@ -127,13 +136,7 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     /// stored.
     #[inline]
     pub(crate) fn empty_buffer(&self) {
-        // SAFETY: No references to buffer exist at this point, so it
-        // is safe to write to the buffer. This can also cause data races
-        // if called from different threads, but EntropyBuffer is not Sync,
-        // so this won't happen.
-        unsafe {
-            self.buffer.get().write([0; SIZE]);
-        }
+        self.update_buffer([0; SIZE]);
         self.update_cursor(Self::total_bytes());
     }
 
@@ -152,13 +155,7 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
 
         while remaining > 0 {
             if self.is_empty() {
-                // SAFETY: No references to buffer exist at this point, so it
-                // is safe to write to the buffer. This can also cause data races
-                // if called from different threads, but EntropyBuffer is not Sync,
-                // so this won't happen.
-                unsafe {
-                    self.update_entropy(source());
-                }
+                self.update_entropy(source());
             }
 
             let filled = self.fill(output);
@@ -260,13 +257,7 @@ mod tests {
     fn fills_byte_slices() {
         let buffer = EntropyBuffer::<1>::new();
 
-        // SAFETY: No references to the underlying buffer exist, and
-        // the EntropyBuffer instance only exists within the test and
-        // can't be accessed from another thread, so no data races are
-        // possible.
-        unsafe {
-            buffer.update_entropy([(2 << 32) | 1]);
-        }
+        buffer.update_entropy([(2 << 32) | 1]);
 
         assert!(!buffer.is_empty());
 
@@ -288,13 +279,7 @@ mod tests {
         assert_eq!(&buffer.get_cursor(), &8);
         assert!(buffer.is_empty());
 
-        // SAFETY: No references to the underlying buffer exist, and
-        // the EntropyBuffer instance only exists within the test and
-        // can't be accessed from another thread, so no data races are
-        // possible.
-        unsafe {
-            buffer.update_entropy([(2 << 32) | 1]);
-        }
+        buffer.update_entropy([(2 << 32) | 1]);
 
         assert!(!buffer.is_empty());
 
@@ -329,13 +314,7 @@ mod tests {
             ],
         );
 
-        // SAFETY: No references to the underlying buffer exist, and
-        // the EntropyBuffer instance only exists within the test and
-        // can't be accessed from another thread, so no data races are
-        // possible.
-        unsafe {
-            buffer.update_entropy([1, 2, 3, 4, 5, 6, 7, 8]);
-        }
+        buffer.update_entropy([1, 2, 3, 4, 5, 6, 7, 8]);
 
         assert_tokens(
             &buffer,

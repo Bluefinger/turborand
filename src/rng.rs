@@ -1,12 +1,12 @@
 //! A fast but **not** cryptographically secure PRNG based on [Wyrand](https://github.com/wangyi-fudan/wyhash).
 
 use crate::{
-    entropy::generate_entropy, internal::CellState, source::wyrand::WyRand, Debug, GenCore, Rc,
+    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand, Debug, GenCore, Rc,
     SeededCore, TurboCore,
 };
 
 #[cfg(feature = "atomic")]
-use crate::internal::AtomicState;
+use crate::internal::state::AtomicState;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};

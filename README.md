@@ -59,6 +59,12 @@ Version 0.6 introduces a major reworking of the crate, with code reorganised and
 - `Rng` is now under a feature flag, `wyrand`. This is enabled by default however, unless `default-features = false` is applied on the dependency declaration in Cargo.toml.
 - _Yeet_ the `rng!`, `atomic_rng!` macros, as these are no longer needed to manage the generics spam that has since been refactored out. Instead, use `::new()`, `::default()` or `::with_seed(seed)` methods instead.
 
+## Migration from 0.6 to 0.7
+
+Version 0.7 hasn't changed much except that the internals module is now fully private (so the `State` traits and `CellState`/`AtomicState` structs are no longer public). They are not accessible from the prelude any more. The removal of these from the public API thus constitutes a breaking change, leading to a new major version.
+
+Also, the serialisation format of `ChaChaRng` has changed, so 0.7 is not compatible with older serialised structs. The plus side is also a flatter serialised format for `ChaChaRng`. Also, `ChaChaRng` is no longer backed by a `Vec` for caching generated entropy, now preferring to use an aligned array for better random number generation at the slight cost of initialisation/cloning performance and increased struct size. This means that the single heap allocation `ChaChaRng` needed is now reduced to zero.
+
 ## License
 
 Licensed under either of

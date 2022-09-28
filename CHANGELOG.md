@@ -6,7 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
-- Prepare for release
+- Prepare release v0.7
+
+## [0.7] - 2022-09-28
+
+### Miscellaneous Tasks
+
+- Format code
+- Improve safety messages
+
+### Refactor
+
+- Revamped EntropyBuffer, better serialization
+- Make internals private, fix perf regression
+- Use split_at_mut in fill method
+- Reorganise internals code
 
 ## [0.6.0] - 2022-08-18
 
@@ -42,6 +56,7 @@ All notable changes to this project will be documented in this file.
 
 - Fix Miri flags
 - Add note about removal of macros.
+- Prepare for release
 
 ### Performance
 

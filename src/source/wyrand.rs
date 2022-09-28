@@ -1,7 +1,7 @@
 use std::iter::repeat_with;
 
 use crate::{
-    internal::{CellState, State},
+    internal::state::{CellState, State},
     Debug,
 };
 

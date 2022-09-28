@@ -93,8 +93,6 @@ use serde::ser::{SerializeStruct, SerializeTuple};
 mod methods;
 
 #[cfg(feature = "chacha")]
-mod buffer;
-#[cfg(feature = "chacha")]
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 pub mod chacha_rng;
 #[cfg(feature = "rand")]
@@ -102,7 +100,6 @@ pub mod chacha_rng;
 pub mod compatibility;
 #[cfg(any(feature = "wyrand", feature = "chacha"))]
 mod entropy;
-#[cfg(feature = "wyrand")]
 mod internal;
 #[cfg(any(feature = "wyrand", feature = "atomic"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "wyrand", feature = "atomic"))))]

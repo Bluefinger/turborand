@@ -1,6 +1,6 @@
 use std::cell::UnsafeCell;
 
-use crate::{buffer::EntropyBuffer, entropy::generate_entropy, Debug};
+use crate::{entropy::generate_entropy, internal::buffer::EntropyBuffer, Debug};
 use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
 
 #[cfg(feature = "serialize")]

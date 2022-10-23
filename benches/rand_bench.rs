@@ -8,6 +8,10 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
         let rand = Rng::default();
         b.iter(|| black_box(rand.clone()))
     });
+    c.bench_function("CellRng fork", |b| {
+        let rand = Rng::default();
+        b.iter(|| black_box(rand.fork()))
+    });
     c.bench_function("CellRng fill_bytes", |b| {
         let rand = Rng::default();
 
@@ -94,6 +98,10 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
         let rand = AtomicRng::default();
         b.iter(|| black_box(rand.clone()))
     });
+    c.bench_function("AtomicRng fork", |b| {
+        let rand = AtomicRng::default();
+        b.iter(|| black_box(rand.fork()))
+    });
     c.bench_function("AtomicRng fill_bytes", |b| {
         let rand = AtomicRng::default();
 
@@ -179,6 +187,10 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
     c.bench_function("ChaChaRng clone", |b| {
         let rand = ChaChaRng::default();
         b.iter(|| black_box(rand.clone()));
+    });
+    c.bench_function("ChaChaRng fork", |b| {
+        let rand = ChaChaRng::default();
+        b.iter(|| black_box(rand.fork()));
     });
     c.bench_function("ChaChaRng fill_bytes", |b| {
         let rand = ChaChaRng::default();

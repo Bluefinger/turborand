@@ -97,8 +97,8 @@ impl ChaCha8 {
 impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: UnsafeCell::new(init_state(self.rand().into())),
-            cache: EntropyBuffer::new(),
+            state: UnsafeCell::new(*self.get_state()),
+            cache: self.cache.clone(),
         }
     }
 }
@@ -221,6 +221,15 @@ mod tests {
         let source = ChaCha8::with_seed([0u8; 40].into());
 
         assert_eq!(format!("{:?}", source), "ChaCha8");
+    }
+
+    #[test]
+    fn clone_chacha_source() {
+        let source = ChaCha8::with_seed([0u8; 40].into());
+
+        let cloned = source.clone();
+
+        assert_eq!(&source, &cloned);
     }
 
     #[test]

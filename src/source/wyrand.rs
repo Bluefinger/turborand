@@ -9,7 +9,7 @@ use crate::{
 use crate::{Deserialize, Serialize};
 
 /// A Wyrand Random Number Generator
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub(crate) struct WyRand<S: Debug + State = CellState>
@@ -71,15 +71,6 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
     }
 }
 
-impl<S: State<Seed = u64> + Debug> Clone for WyRand<S> {
-    /// Deterministically clones the [`WyRand`] source.
-    fn clone(&self) -> Self {
-        Self {
-            state: S::with_seed(u64::from_le_bytes(self.rand())),
-        }
-    }
-}
-
 impl<S: State<Seed = u64> + Debug> Debug for WyRand<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("WyRand").field(&self.state).finish()
@@ -136,15 +127,15 @@ mod tests {
         let cloned1 = rng1.clone();
         let cloned2 = rng2.clone();
 
-        assert_ne!(
-            &rng1.generate(),
-            &cloned1.generate(),
-            "cloned rngs should not match against the original"
+        assert_eq!(
+            &rng1,
+            &cloned1,
+            "cloned rngs should match against the original"
         );
-        assert_ne!(
-            &rng2.generate(),
-            &cloned2.generate(),
-            "cloned rngs should not match against the original"
+        assert_eq!(
+            &rng2,
+            &cloned2,
+            "cloned rngs should match against the original"
         );
         assert_eq!(
             &cloned1.generate(),

@@ -18,15 +18,14 @@ fn fallback_entropy<B: AsMut<[u8]>>(mut buffer: B) -> Result<(), Error> {
     thread::current().id().hash(&mut hasher);
 
     let mut buffer = buffer.as_mut();
-    let mut remaining = buffer.len();
 
-    while remaining > 0 {
-        remaining.hash(&mut hasher);
+    while !buffer.is_empty() {
+        buffer.len().hash(&mut hasher);
         let output = hasher.finish().to_ne_bytes();
-        let fill = output.len().min(remaining);
-        buffer[..fill].copy_from_slice(&output[..fill]);
-        buffer = &mut buffer[fill..];
-        remaining -= fill;
+        let fill = output.len().min(buffer.len());
+        let (target, remaining) = buffer.split_at_mut(fill);
+        target.copy_from_slice(&output[..fill]);
+        buffer = remaining;
     }
 
     Ok(())

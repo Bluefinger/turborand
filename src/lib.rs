@@ -107,6 +107,6 @@ pub mod rng;
 mod source;
 mod traits;
 
-pub use traits::{GenCore, SecureCore, SeededCore, TurboCore, TurboRand};
+pub use traits::{ForkableCore, GenCore, SecureCore, SeededCore, TurboCore, TurboRand};
 
 pub mod prelude;

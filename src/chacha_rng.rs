@@ -1,7 +1,7 @@
 //! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
-    entropy::generate_entropy, source::chacha::ChaCha8, GenCore, Rc, SecureCore, SeededCore,
-    TurboCore,
+    entropy::generate_entropy, source::chacha::ChaCha8, ForkableCore, GenCore, Rc, SecureCore,
+    SeededCore, TurboCore,
 };
 
 use crate::source::chacha::utils::AlignedSeed;
@@ -10,7 +10,7 @@ use crate::source::chacha::utils::AlignedSeed;
 use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `ChaCha8` algorithm.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
@@ -21,7 +21,7 @@ impl ChaChaRng {
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        SECURE.with(|rng| rng.as_ref().clone())
+        SECURE.with(|rng| rng.fork())
     }
 
     /// Reseeds the current thread-local generator.
@@ -60,6 +60,14 @@ impl SeededCore for ChaChaRng {
     }
 }
 
+impl ForkableCore for ChaChaRng {
+    #[inline]
+    #[must_use]
+    fn fork(&self) -> Self {
+        Self(ChaCha8::with_seed(AlignedSeed::from(self.0.rand())))
+    }
+}
+
 impl SecureCore for ChaChaRng {}
 
 impl Default for ChaChaRng {
@@ -78,31 +86,6 @@ impl Default for ChaChaRng {
     #[inline]
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl Clone for ChaChaRng {
-    /// Clones the [`ChaChaRng`] by deterministically deriving a new [`ChaChaRng`] based on the initial
-    /// seed.
-    ///
-    /// # Example
-    /// ```
-    /// use turborand::prelude::*;
-    ///
-    /// let rng1 = ChaChaRng::with_seed([0u8; 40]);
-    /// let rng2 = ChaChaRng::with_seed([0u8; 40]);
-    ///
-    /// // Use the RNGs once each.
-    /// rng1.bool();
-    /// rng2.bool();
-    ///
-    /// let cloned1 = rng1.clone();
-    /// let cloned2 = rng2.clone();
-    ///
-    /// assert_eq!(cloned1.u64(..), cloned2.u64(..));
-    /// ```
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
     }
 }
 

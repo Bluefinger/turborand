@@ -128,13 +128,11 @@ mod tests {
         let cloned2 = rng2.clone();
 
         assert_eq!(
-            &rng1,
-            &cloned1,
+            &rng1, &cloned1,
             "cloned rngs should match against the original"
         );
         assert_eq!(
-            &rng2,
-            &cloned2,
+            &rng2, &cloned2,
             "cloned rngs should match against the original"
         );
         assert_eq!(

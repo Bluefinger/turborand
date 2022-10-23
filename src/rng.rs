@@ -1,8 +1,8 @@
 //! A fast but **not** cryptographically secure PRNG based on [Wyrand](https://github.com/wangyi-fudan/wyhash).
 
 use crate::{
-    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand,
-    ForkableCore, Debug, GenCore, Rc, SeededCore, TurboCore,
+    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand, Debug,
+    ForkableCore, GenCore, Rc, SeededCore, TurboCore,
 };
 
 #[cfg(feature = "atomic")]
@@ -162,7 +162,6 @@ impl ForkableCore for AtomicRng {
         Self(WyRand::with_seed(u64::from_le_bytes(self.0.rand())))
     }
 }
-
 
 #[cfg(feature = "atomic")]
 impl TurboCore for AtomicRng {

@@ -1,8 +1,8 @@
 //! A fast but **not** cryptographically secure PRNG based on [Wyrand](https://github.com/wangyi-fudan/wyhash).
 
 use crate::{
-    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand, Debug, GenCore,
-    Rc, SeededCore, TurboCore,
+    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand, Debug,
+    ForkableCore, GenCore, Rc, SeededCore, TurboCore,
 };
 
 #[cfg(feature = "atomic")]
@@ -12,7 +12,7 @@ use crate::internal::state::AtomicState;
 use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[repr(transparent)]
@@ -23,7 +23,7 @@ impl Rng {
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        Self(WyRand::with_seed(RNG.with(|rng| rng.gen_u64())))
+        RNG.with(|rng| rng.fork())
     }
 
     /// Reseeds the current thread-local generator.
@@ -81,28 +81,11 @@ impl Default for Rng {
     }
 }
 
-impl Clone for Rng {
-    /// Clones the [`Rng`] by deterministically deriving a new [`Rng`] based on the initial
-    /// seed.
-    ///
-    /// # Example
-    /// ```
-    /// use turborand::prelude::*;
-    ///
-    /// let rng1 = Rng::with_seed(Default::default());
-    /// let rng2 = Rng::with_seed(Default::default());
-    ///
-    /// // Use the RNGs once each.
-    /// rng1.bool();
-    /// rng2.bool();
-    ///
-    /// let cloned1 = rng1.clone();
-    /// let cloned2 = rng2.clone();
-    ///
-    /// assert_eq!(cloned1.u64(..), cloned2.u64(..));
-    /// ```
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+impl ForkableCore for Rng {
+    #[inline]
+    #[must_use]
+    fn fork(&self) -> Self {
+        Self(WyRand::with_seed(u64::from_le_bytes(self.0.rand())))
     }
 }
 
@@ -168,6 +151,15 @@ impl Clone for AtomicRng {
     /// ```
     fn clone(&self) -> Self {
         Self(self.0.clone())
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl ForkableCore for AtomicRng {
+    #[inline]
+    #[must_use]
+    fn fork(&self) -> Self {
+        Self(WyRand::with_seed(u64::from_le_bytes(self.0.rand())))
     }
 }
 

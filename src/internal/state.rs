@@ -69,6 +69,13 @@ impl Debug for CellState {
     }
 }
 
+impl Clone for CellState {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self(Cell::new(self.get()))
+    }
+}
+
 /// [`Send`] and [`Sync`] state for `AtomicRng`. Stores the current
 /// state of the PRNG in a [`AtomicU64`].
 ///
@@ -131,6 +138,14 @@ impl Eq for AtomicState {}
 impl Debug for AtomicState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("AtomicState").finish()
+    }
+}
+
+#[cfg(feature = "atomic")]
+impl Clone for AtomicState {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self(AtomicU64::new(self.get()))
     }
 }
 

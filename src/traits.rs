@@ -569,6 +569,40 @@ pub trait TurboRand: TurboCore + GenCore {
     }
 }
 
+/// Trait for enabling creating new [`TurboCore`] instances from an original instance.
+/// Similar to cloning, except forking modifies the state of the original instance in order
+/// to provide a new, random state for the forked instance. This allows for creating many randomised
+/// instances from a single seed in a deterministic manner.
+pub trait ForkableCore: TurboCore {
+    /// Forks a [`TurboCore`] instance by deterministically deriving a new instance based on the initial
+    /// seed.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng1 = Rng::with_seed(Default::default());
+    /// let rng2 = Rng::with_seed(Default::default());
+    ///
+    /// // Use the RNGs once each.
+    /// rng1.bool();
+    /// rng2.bool();
+    ///
+    /// let forked1 = rng1.fork();
+    /// let forked2 = rng2.fork();
+    ///
+    /// // Forked instances should not be equal to the originals
+    /// assert_ne!(forked1, rng1);
+    /// assert_ne!(forked2, rng2);
+    /// // If they derived from the same initial seed, forked instances
+    /// // should be equal to each other...
+    /// assert_eq!(forked1, forked2);
+    /// // ...and thus yield the same outputs.
+    /// assert_eq!(forked1.u64(..), forked2.u64(..));
+    /// ```
+    fn fork(&self) -> Self;
+}
+
 impl<T: TurboCore + GenCore + ?Sized> TurboRand for T {}
 
 impl<T: TurboCore + ?Sized> TurboCore for Box<T> {

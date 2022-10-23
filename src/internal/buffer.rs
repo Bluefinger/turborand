@@ -179,6 +179,16 @@ impl<const SIZE: usize> Default for EntropyBuffer<SIZE> {
     }
 }
 
+impl<const SIZE: usize> Clone for EntropyBuffer<SIZE> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            buffer: UnsafeCell::new(*self.get_buffer()),
+            cursor: UnsafeCell::new(self.get_cursor()),
+        }
+    }
+}
+
 impl<const SIZE: usize> PartialEq for EntropyBuffer<SIZE> {
     fn eq(&self, other: &Self) -> bool {
         self.get_buffer() == other.get_buffer() && self.get_cursor() == other.get_cursor()
@@ -294,6 +304,24 @@ mod tests {
         assert_eq!(&output, &[2, 0, 0, 0, 1, 0]);
         assert_eq!(&filled, &2);
         assert_eq!(&buffer.get_cursor(), &2);
+    }
+
+    #[test]
+    fn clone_buffer() {
+        let buffer = EntropyBuffer::<1>::new();
+
+        buffer.update_entropy([(2 << 32) | 1]);
+
+        let mut output = [0u8; 4];
+
+        // Modify the buffer to have a new state.
+        buffer.fill(&mut output);
+
+        // Clone the buffer
+        let cloned = buffer.clone();
+
+        // Check if the cloned buffer has the same state as the original
+        assert_eq!(&buffer, &cloned);
     }
 
     #[cfg(feature = "serialize")]

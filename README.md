@@ -65,6 +65,10 @@ Version 0.7 hasn't changed much except that the internals module is now fully pr
 
 Also, the serialisation format of `ChaChaRng` has changed, so 0.7 is not compatible with older serialised structs. The plus side is also a flatter serialised format for `ChaChaRng`. Also, `ChaChaRng` is no longer backed by a `Vec` for caching generated entropy, now preferring to use an aligned array for better random number generation at the slight cost of initialisation/cloning performance and increased struct size. This means that the single heap allocation `ChaChaRng` needed is now reduced to zero.
 
+## Migration from 0.7 to 0.8
+
+Version 0.8 seperates the old `Clone` behaviour into two: standard `Clone` which maintains the original state and clones it to the new instance as is (and so both old and new equal to each other), and `ForkableCore` which mutates the state of the original to _fork_ a new instance with a random state generated from the original. **Previous usage of `.clone()` now should make use of `.fork()` instead**. Cloning now should be used where preserving the state of the original to the cloned instance is required.
+
 ## License
 
 Licensed under either of

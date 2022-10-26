@@ -6,14 +6,25 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
-- Prepare release v0.7
+- Prepare for release
 
-## [0.7] - 2022-09-28
+## [0.8.0] - 2022-10-23
+
+### Miscellaneous Tasks
+
+- Format code
+
+### Refactor
+
+- Separate forking and cloning behaviours
+
+## [0.7.0] - 2022-09-28
 
 ### Miscellaneous Tasks
 
 - Format code
 - Improve safety messages
+- Prepare release v0.7
 
 ### Refactor
 

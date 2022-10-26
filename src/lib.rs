@@ -44,7 +44,7 @@
 //! # Features
 //!
 //! The base crate will always export the [`TurboCore`], [`GenCore`],
-//! [`SeededCore`], [`TurboRand`] and [`SecureCore`] traits, and will do
+//! [`SeededCore`], [`TurboRand`], [`SecureCore`] and [`ForkableCore`] traits, and will do
 //! so when set as `default-features = false` in the Cargo.toml. By default,
 //! it will have `wyrand` feature enabled as the basic PRNG exposed.
 //!

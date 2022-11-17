@@ -18,6 +18,7 @@ instant = { version = "0.1" }
 getrandom = { version = "0.2", features = ["js"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+criterion = { version = "0.4", default-features = false }
 instant = { version = "0.1", features = ["wasm-bindgen"] }
 wasm-bindgen-test = "0.3"
 

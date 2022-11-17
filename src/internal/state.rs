@@ -18,20 +18,18 @@ use crate::Visitor;
 /// leaking the Rng's state via debug, which could have security
 /// implications if one wishes to obfuscate the Rng's state.
 pub(crate) trait State: Sized {
-    /// Seed Associated Type, must be `Sized` and `Default`.
-    type Seed: Sized + Default + Copy;
     /// Initialise a state with a seed value.
-    fn with_seed(seed: Self::Seed) -> Self
+    fn with_seed(seed: u64) -> Self
     where
         Self: Sized;
     /// Return the current state.
-    fn get(&self) -> Self::Seed;
+    fn get(&self) -> u64;
     /// Set the state with a new value.
-    fn set(&self, value: Self::Seed);
+    fn set(&self, value: u64);
     /// Update the internal state and return the new, resulting value
-    #[inline]
-    fn update<F: Fn(Self::Seed) -> Self::Seed>(&self, updater: F) -> Self::Seed {
-        let new_value = updater(self.get());
+    #[inline(always)]
+    fn update(&self, value: u64) -> u64 {
+        let new_value = self.get().wrapping_add(value);
         self.set(new_value);
         new_value
     }
@@ -45,20 +43,18 @@ pub(crate) trait State: Sized {
 pub(crate) struct CellState(Cell<u64>);
 
 impl State for CellState {
-    type Seed = u64;
-
     #[inline]
-    fn with_seed(seed: Self::Seed) -> Self {
+    fn with_seed(seed: u64) -> Self {
         Self(Cell::new(seed))
     }
 
     #[inline]
-    fn get(&self) -> Self::Seed {
+    fn get(&self) -> u64 {
         self.0.get()
     }
 
     #[inline]
-    fn set(&self, value: Self::Seed) {
+    fn set(&self, value: u64) {
         self.0.set(value);
     }
 }
@@ -104,7 +100,6 @@ pub(crate) struct AtomicState(AtomicU64);
 
 #[cfg(feature = "atomic")]
 impl State for AtomicState {
-    type Seed = u64;
     #[inline]
     fn with_seed(seed: u64) -> Self
     where

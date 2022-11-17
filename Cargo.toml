@@ -18,8 +18,12 @@ instant = { version = "0.1" }
 getrandom = { version = "0.2", features = ["js"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+criterion = { version = "0.4", default-features = false }
 instant = { version = "0.1", features = ["wasm-bindgen"] }
 wasm-bindgen-test = "0.3"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+criterion = "0.4"
 
 [dependencies]
 bytemuck = { version = "1", features = ["min_const_generics"], optional = true }
@@ -28,7 +32,6 @@ rand_core = { version = "0.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
-criterion = "0.3"
 serde_test = "1.0"
 
 [[bench]]

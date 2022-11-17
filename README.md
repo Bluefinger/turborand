@@ -49,6 +49,18 @@ let rand = Rng::new();
 let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 ```
 
+## Performance
+
+`Wyrand` is a pretty fast PRNG, and is a good choice when speed is needed while still having decent statistical properties. Currently, the `turborand` implementation benches extremely well against similar `rand` algorithms. Below is a chart of the `fill_bytes` method performance, tested on Windows 10 x64 on an AMD Ryzen 1700 clocked at 3.7Ghz with 32GB RAM at 3066Mhz.
+
+![fill_bytes benchmark](./assets/fill_bytes_violin.svg)
+
+For filling 2048 byte array buffers, `turborand`'s `Rng` is able to do so in around 170-180ns, whereas `SmallRng` does it between 260-268ns, and `Pcg64Mcg` (the fastest PCG impl on 64bit systems) does it in 305-312ns.
+
+![u64 gen benchmark](./assets/u64_violin.svg)
+
+For generating unbound `u64` values, `turborand` and `fastrand` are equal in performance, which is expected given they both implement the `Wyrand` algorithm, consistently performing around 820-830ps for generating a `u64` value. `SmallRng` performs around 1.16ns, while `Pcg64Mcg` is at 1.35ns.
+
 ## Migration from 0.5 to 0.6
 
 Version 0.6 introduces a major reworking of the crate, with code reorganised and also exposed more granularly via features. First things to note:

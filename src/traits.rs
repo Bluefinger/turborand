@@ -356,6 +356,39 @@ pub trait TurboRand: TurboCore + GenCore {
         }
     }
 
+    /// Samples a random `&mut` item from a slice of values.
+    /// 
+    /// **NOTE**: Mutable references must be dropped before more can be
+    /// sampled from the source slice. If a sampling tries to yield a mutable
+    /// reference that already exists, the compiler will complain.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5, 6];
+    /// 
+    /// let result1 = rng.sample_mut(&mut values);
+    ///
+    /// assert_eq!(result1, Some(&mut 5));
+    /// 
+    /// let result2 = rng.sample_mut(&mut values);
+    /// 
+    /// assert_eq!(result2, Some(&mut 3));
+    /// ```
+    #[inline]
+    fn sample_mut<'a, T>(&self, list: &'a mut [T]) -> Option<&'a mut T> {
+        match list.len() {
+            0 => None,
+            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
+            1 => unsafe { Some(list.get_unchecked_mut(0)) },
+            // SAFETY: Range is exclusive, so yielded random values will always be a valid index and within bounds
+            _ => unsafe { Some(list.get_unchecked_mut(self.usize(..list.len()))) },
+        }
+    }
+
     /// Samples multiple unique items from a slice of values.
     ///
     /// # Example
@@ -373,6 +406,33 @@ pub trait TurboRand: TurboCore + GenCore {
         let draining = list.len().min(amount);
 
         let mut shuffled: Vec<&'a T> = list.iter().collect();
+
+        self.shuffle(&mut shuffled);
+
+        shuffled.drain(0..draining).collect()
+    }
+
+    /// Samples multiple unique items from a mutable slice of values.
+    /// 
+    /// **NOTE**: Mutable references must be dropped before more can be
+    /// sampled from the source slice. If a sampling tries to yield a mutable
+    /// reference that already exists, the compiler will complain.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// assert_eq!(rng.sample_multiple_mut(&mut values, 2), vec![&mut 6, &mut 4]);
+    /// ```
+    #[inline]
+    fn sample_multiple_mut<'a, T>(&self, list: &'a mut [T], amount: usize) -> Vec<&'a mut T> {
+        let draining = list.len().min(amount);
+
+        let mut shuffled: Vec<&'a mut T> = list.iter_mut().collect();
 
         self.shuffle(&mut shuffled);
 
@@ -419,6 +479,78 @@ pub trait TurboRand: TurboCore + GenCore {
             _ => repeat_with(|| self.sample(list))
                 .flatten()
                 .find(|&item| self.chance(weight_sampler(item))),
+        }
+    }
+
+    /// [Stochastic Acceptance](https://arxiv.org/abs/1109.3627) implementation of Roulette Wheel
+    /// weighted selection. Uses a closure to return a `rate` value for each randomly sampled item
+    /// to decide whether to return it or not. The returned `f64` value must be between `0.0` and `1.0`.
+    ///
+    /// Returns `None` if given an empty list to sample from. For a list containing 1 item, it'll always
+    /// return that item regardless.
+    /// 
+    /// **NOTE**: Mutable references must be dropped before more can be
+    /// sampled from the source slice. If a sampling tries to yield a mutable
+    /// reference that already exists, the compiler will complain.
+    ///
+    /// # Panics
+    ///
+    /// If the returned value of the `weight_sampler` closure is not between `0.0` and `1.0`.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// let total = f64::from(values.iter().sum::<i32>());
+    ///
+    /// let result1 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    ///
+    /// assert_eq!(result1, Some(&mut 4));
+    ///
+    /// let result2 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    ///
+    /// assert_eq!(result2, Some(&mut 5));
+    ///
+    /// // We have to drop `result2` because the next sample will try to return the same
+    /// // value again. And rust won't allow two mutable references to exist at the same
+    /// // time
+    /// drop(result2);
+    ///
+    /// let result3 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    ///
+    /// // Weighted sample in this example will favour larger numbers, so 5 gets picked
+    /// // again.
+    /// assert_eq!(result3, Some(&mut 5));
+    /// ```
+    #[inline]
+    fn weighted_sample_mut<'a, T, F>(
+        &'a self,
+        list: &'a mut [T],
+        weight_sampler: F,
+    ) -> Option<&'a mut T>
+    where
+        F: Fn(&T) -> f64,
+    {
+        // Check how many items are in the list
+        match list.len() {
+            // No values in list, therefore return None.
+            0 => None,
+            // Only a single value in list, therefore sampling will always yield that value.
+            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
+            1 => unsafe { Some(list.get_unchecked_mut(0)) },
+            // Sample the list, flatten the `Option<&T>` and then check if it passes the
+            // weighted chance. Keep repeating until `.find` yields a value.
+            _ => repeat_with(|| self.usize(..list.len()))
+                // SAFETY: The resolved index will always be within bounds, since the list here
+                // is not zero length and has more than 1 element available.
+                .find(|&index| self.chance(weight_sampler(unsafe { list.get_unchecked(index) })))
+                // SAFETY: The resolved index will always be within bounds, since the list here
+                // is not zero length and has more than 1 element available.
+                .map(|index| unsafe { list.get_unchecked_mut(index) }),
         }
     }
 

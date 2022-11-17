@@ -8,11 +8,27 @@ All notable changes to this project will be documented in this file.
 
 - Prepare for release
 
-## [0.8.0] - 2022-10-23
+## [0.8.1] - 2022-11-17
+
+### Features
+
+- Implement _mut sampling methods
+
+### Miscellaneous Tasks
+
+- No default criterion features in wasm
+- Explicit criterion features for non-wasm targets
+
+### Performance
+
+- Improve fill_bytes throughput
+
+## [0.8.0] - 2022-10-26
 
 ### Miscellaneous Tasks
 
 - Format code
+- Prepare for release
 
 ### Refactor
 

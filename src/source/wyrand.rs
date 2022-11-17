@@ -1,5 +1,3 @@
-use std::iter::repeat_with;
-
 use crate::{
     internal::state::{CellState, State},
     Debug,
@@ -12,14 +10,11 @@ use crate::{Deserialize, Serialize};
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub(crate) struct WyRand<S: Debug + State = CellState>
-where
-    S: State<Seed = u64>,
-{
+pub(crate) struct WyRand<S: Debug + State = CellState> {
     state: S,
 }
 
-impl<S: State<Seed = u64> + Debug> WyRand<S> {
+impl<S: State + Debug> WyRand<S> {
     /// Creates a new [`WyRand`] source with seeded value.
     #[inline]
     pub(crate) fn with_seed(seed: u64) -> Self {
@@ -34,11 +29,9 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
         self.state.set(seed);
     }
 
-    #[inline]
+    #[inline(always)]
     fn generate(&self) -> [u8; core::mem::size_of::<u64>()] {
-        let state = self
-            .state
-            .update(|value| value.wrapping_add(0xa076_1d64_78bd_642f));
+        let state = self.state.update(0xa076_1d64_78bd_642f);
         let t = u128::from(state).wrapping_mul(u128::from(state ^ 0xe703_7ed1_a0b4_28db));
         let ret = (t.wrapping_shr(64) ^ t) as u64;
         ret.to_le_bytes()
@@ -57,21 +50,26 @@ impl<S: State<Seed = u64> + Debug> WyRand<S> {
     #[inline]
     pub fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
         let mut output = buffer.as_mut();
-        let iterations = (output.len() as f32 / core::mem::size_of::<u64>() as f32).ceil() as usize;
 
-        for input in repeat_with(|| self.generate()).take(iterations) {
-            let fill = output.len().min(input.len());
+        while output.len() >= 8 {
+            let (target, remainder) = output.split_at_mut(8);
 
-            let (target, remainder) = output.split_at_mut(fill);
-
-            target.copy_from_slice(&input[..fill]);
+            target.copy_from_slice(&self.generate());
 
             output = remainder;
+        }
+
+        if !output.is_empty() {
+            let input = self.generate();
+
+            let fill = output.len().min(input.len());
+
+            output.copy_from_slice(&input[..fill]);
         }
     }
 }
 
-impl<S: State<Seed = u64> + Debug> Debug for WyRand<S> {
+impl<S: State + Debug> Debug for WyRand<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("WyRand").field(&self.state).finish()
     }

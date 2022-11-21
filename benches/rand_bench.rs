@@ -23,6 +23,17 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
             criterion::BatchSize::SmallInput,
         )
     });
+    c.bench_function("CellRng fill_bytes large", |b| {
+        let rand = Rng::default();
+
+        let data = [0u8; 2048];
+
+        b.iter_batched_ref(
+            || data,
+            |data| rand.fill_bytes(data),
+            criterion::BatchSize::LargeInput,
+        )
+    });
     c.bench_function("CellRng gen_u128", |b| {
         let rand = Rng::default();
         b.iter(|| black_box(rand.gen_u128()));
@@ -113,6 +124,17 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
             criterion::BatchSize::SmallInput,
         )
     });
+    c.bench_function("AtomicRng fill_bytes large", |b| {
+        let rand = AtomicRng::default();
+
+        let data = [0u8; 2048];
+
+        b.iter_batched_ref(
+            || data,
+            |data| rand.fill_bytes(data),
+            criterion::BatchSize::LargeInput,
+        )
+    });
     c.bench_function("AtomicRng gen_u128", |b| {
         let rand = AtomicRng::default();
         b.iter(|| black_box(rand.gen_u128()));
@@ -201,6 +223,17 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
             || data,
             |mut data| rand.fill_bytes(&mut data),
             criterion::BatchSize::SmallInput,
+        )
+    });
+    c.bench_function("ChaChaRng fill_bytes large", |b| {
+        let rand = ChaChaRng::default();
+
+        let data = [0u8; 2048];
+
+        b.iter_batched_ref(
+            || data,
+            |data| rand.fill_bytes(data),
+            criterion::BatchSize::LargeInput,
         )
     });
     c.bench_function("ChaChaRng gen_u128", |b| {

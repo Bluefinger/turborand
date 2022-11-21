@@ -125,17 +125,21 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
     /// length, which can either be the entire length of the mutable
     /// slice, or the amount filled by the remaining buffer.
     #[inline]
-    fn fill(&self, output: &mut [u8]) -> usize {
-        let length = output.len().min(self.remaining_buffer());
+    fn fill_from_buffer(&self, output: &mut [u8], amount: usize) {
         let cursor = self.get_cursor();
-        let to = cursor + length;
+        let to = cursor + amount;
         let buffer = bytemuck::cast_slice(self.get_buffer());
 
-        output[..length].copy_from_slice(&buffer[cursor..to]);
+        output.copy_from_slice(&buffer[cursor..to]);
 
         self.update_cursor(to);
+    }
 
-        length
+    #[inline(always)]
+    fn fill_from_source(&self, output: &mut [u8], buffer: [u64; SIZE]) {
+        let input: &[u8] = bytemuck::cast_slice(&buffer);
+
+        output.copy_from_slice(input);
     }
 
     /// Resets the internal buffer and cursor state, clearing any entropy
@@ -157,17 +161,45 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
         source: S,
     ) {
         let mut output = output.as_mut();
-        let mut remaining = output.len();
 
-        while remaining > 0 {
-            if self.is_empty() {
-                self.update_entropy(source());
+        if output.len() <= self.remaining_buffer() {
+            self.fill_from_buffer(output, output.len());
+        } else {
+            while output.len() >= Self::total_bytes() {
+                if self.is_empty() {
+                    let (target, remainder) = output.split_at_mut(Self::total_bytes());
+
+                    output = remainder;
+
+                    self.fill_from_source(target, source());
+                } else {
+                    let length = self.remaining_buffer();
+
+                    let (target, remainder) = output.split_at_mut(length);
+
+                    output = remainder;
+
+                    self.fill_from_buffer(target, length);
+                }
             }
 
-            let filled = self.fill(output);
+            loop {
+                if self.is_empty() {
+                    self.update_entropy(source());
+                }
 
-            output = &mut output[filled..];
-            remaining -= filled;
+                let length = output.len().min(self.remaining_buffer());
+
+                let (target, remainder) = output.split_at_mut(length);
+
+                output = remainder;
+
+                self.fill_from_buffer(target, length);
+
+                if output.is_empty() {
+                    break;
+                }
+            }
         }
     }
 }
@@ -273,49 +305,70 @@ mod tests {
     fn fills_byte_slices() {
         let buffer = EntropyBuffer::<1>::new();
 
-        buffer.update_entropy([(2 << 32) | 1]);
-
-        assert!(!buffer.is_empty());
+        let source = || [(2 << 32) | 1];
 
         let mut output = [0u8; 4];
 
-        let filled = buffer.fill(&mut output);
+        buffer.fill_bytes_with_source(&mut output, source);
 
         assert_eq!(&output, &[1, 0, 0, 0]);
-        assert_eq!(&filled, &4);
         assert_eq!(&buffer.get_cursor(), &4);
         assert!(!buffer.is_empty());
 
         let mut output = [0u8; 6];
 
-        let filled = buffer.fill(&mut output);
-
-        assert_eq!(&output, &[2, 0, 0, 0, 0, 0]);
-        assert_eq!(&filled, &4);
-        assert_eq!(&buffer.get_cursor(), &8);
-        assert!(buffer.is_empty());
-
-        buffer.update_entropy([(2 << 32) | 1]);
-
-        assert!(!buffer.is_empty());
-
-        let filled = buffer.fill(&mut output[filled..]);
+        buffer.fill_bytes_with_source(&mut output, source);
 
         assert_eq!(&output, &[2, 0, 0, 0, 1, 0]);
-        assert_eq!(&filled, &2);
         assert_eq!(&buffer.get_cursor(), &2);
+        assert!(!buffer.is_empty());
+    }
+
+    #[test]
+    fn fills_large_byte_slices() {
+        let buffer = EntropyBuffer::<4>::new();
+
+        let source = || [1u64, 2, 3, u64::MAX];
+
+        let mut output = [0u8; 40];
+
+        buffer.fill_bytes_with_source(&mut output, source);
+
+        assert_eq!(
+            &output,
+            &[
+                1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 255, 255,
+                255, 255, 255, 255, 255, 255, 1, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(&buffer.get_cursor(), &8);
+        assert!(!buffer.is_empty());
+
+        let mut output = [0u8; 40];
+
+        buffer.fill_bytes_with_source(&mut output, source);
+
+        assert_eq!(
+            &output,
+            &[
+                2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255,
+                255, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(&buffer.get_cursor(), &16);
+        assert!(!buffer.is_empty());
     }
 
     #[test]
     fn clone_buffer() {
         let buffer = EntropyBuffer::<1>::new();
 
-        buffer.update_entropy([(2 << 32) | 1]);
+        let source = || [(2 << 32) | 1];
 
         let mut output = [0u8; 4];
 
         // Modify the buffer to have a new state.
-        buffer.fill(&mut output);
+        buffer.fill_bytes_with_source(&mut output, source);
 
         // Clone the buffer
         let cloned = buffer.clone();

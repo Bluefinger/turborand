@@ -183,7 +183,7 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
                 }
             }
 
-            loop {
+            while !output.is_empty() {
                 if self.is_empty() {
                     self.update_entropy(source());
                 }
@@ -195,10 +195,6 @@ impl<const SIZE: usize> EntropyBuffer<SIZE> {
                 output = remainder;
 
                 self.fill_from_buffer(target, length);
-
-                if output.is_empty() {
-                    break;
-                }
             }
         }
     }

@@ -213,6 +213,10 @@ mod tests {
         state.set(5);
 
         assert_eq!(state.get(), 5);
+
+        state.update(6);
+
+        assert_eq!(state.get(), 11);
     }
 
     #[test]
@@ -232,6 +236,10 @@ mod tests {
         state.set(5);
 
         assert_eq!(state.get(), 5);
+
+        state.update(6);
+
+        assert_eq!(state.get(), 11);
     }
 
     #[cfg(feature = "atomic")]

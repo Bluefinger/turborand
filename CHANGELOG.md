@@ -8,6 +8,17 @@ All notable changes to this project will be documented in this file.
 
 - Prepare for release
 
+## [0.8.2] - 2022-11-21
+
+### Miscellaneous Tasks
+
+- Add more unit tests
+
+### Performance
+
+- Improve buffer on large or known slice sizes
+- Simplify while loop for fill
+
 ## [0.8.1] - 2022-11-17
 
 ### Features
@@ -18,6 +29,7 @@ All notable changes to this project will be documented in this file.
 
 - No default criterion features in wasm
 - Explicit criterion features for non-wasm targets
+- Prepare for release
 
 ### Performance
 

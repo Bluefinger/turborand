@@ -258,6 +258,7 @@ pub trait TurboRand: TurboCore + GenCore {
         f32,
         f32,
         u32,
+        1.0,
         gen_u32,
         "Returns a random `f32` value between `0.0` and `1.0`."
     );
@@ -265,6 +266,7 @@ pub trait TurboRand: TurboCore + GenCore {
         f32_normalized,
         f32,
         i32,
+        2.0,
         gen_i32,
         "Returns a random `f32` value between `-1.0` and `1.0`."
     );
@@ -272,6 +274,7 @@ pub trait TurboRand: TurboCore + GenCore {
         f64,
         f64,
         u64,
+        1.0,
         gen_u64,
         "Returns a random `f32` value between `0.0` and `1.0`."
     );
@@ -279,6 +282,7 @@ pub trait TurboRand: TurboCore + GenCore {
         f64_normalized,
         f64,
         i64,
+        2.0,
         gen_i64,
         "Returns a random `f32` value between `-1.0` and `1.0`."
     );
@@ -357,7 +361,7 @@ pub trait TurboRand: TurboCore + GenCore {
     }
 
     /// Samples a random `&mut` item from a slice of values.
-    /// 
+    ///
     /// **NOTE**: Mutable references must be dropped before more can be
     /// sampled from the source slice. If a sampling tries to yield a mutable
     /// reference that already exists, the compiler will complain.
@@ -369,13 +373,13 @@ pub trait TurboRand: TurboCore + GenCore {
     /// let rng = Rng::with_seed(Default::default());
     ///
     /// let mut values = [1, 2, 3, 4, 5, 6];
-    /// 
+    ///
     /// let result1 = rng.sample_mut(&mut values);
     ///
     /// assert_eq!(result1, Some(&mut 5));
-    /// 
+    ///
     /// let result2 = rng.sample_mut(&mut values);
-    /// 
+    ///
     /// assert_eq!(result2, Some(&mut 3));
     /// ```
     #[inline]
@@ -413,7 +417,7 @@ pub trait TurboRand: TurboCore + GenCore {
     }
 
     /// Samples multiple unique items from a mutable slice of values.
-    /// 
+    ///
     /// **NOTE**: Mutable references must be dropped before more can be
     /// sampled from the source slice. If a sampling tries to yield a mutable
     /// reference that already exists, the compiler will complain.
@@ -488,7 +492,7 @@ pub trait TurboRand: TurboCore + GenCore {
     ///
     /// Returns `None` if given an empty list to sample from. For a list containing 1 item, it'll always
     /// return that item regardless.
-    /// 
+    ///
     /// **NOTE**: Mutable references must be dropped before more can be
     /// sampled from the source slice. If a sampling tries to yield a mutable
     /// reference that already exists, the compiler will complain.

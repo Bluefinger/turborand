@@ -56,11 +56,16 @@ macro_rules! trait_range_int {
 }
 
 macro_rules! trait_float_gen {
-    ($name:ident, $value:tt, $int:ty, $source:ident, $doc:tt) => {
+    ($name:ident, $value:tt, $int:ty, $scale:expr, $source:ident, $doc:tt) => {
         #[doc = $doc]
         #[inline]
         fn $name(&self) -> $value {
-            (self.$source() as $value) / (<$int>::MAX as $value)
+            const FLOAT_SIZE: u32 = (core::mem::size_of::<$value>() as u32) * 8;
+            const SCALE: $value = $scale / ((1 as $int << <$value>::MANTISSA_DIGITS) as $value);
+
+            let value = self.$source() >> (FLOAT_SIZE - <$value>::MANTISSA_DIGITS);
+
+            SCALE * (value as $value)
         }
     };
 }

@@ -101,6 +101,188 @@ fn range_smoke_testing() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn float_smoke_testing() {
+    let rng = Rng::default();
+
+    for _ in 0..5000 {
+        let index = rng.f32();
+
+        assert!(
+            (0.0..=1.0).contains(&index),
+            "Must generate a number within 0.0 and 1.0, received: {}",
+            index
+        );
+    }
+
+    for _ in 0..5000 {
+        let index = rng.f32_normalized();
+
+        assert!(
+            (-1.0..=1.0).contains(&index),
+            "Must generate a number within -1.0 and 1.0, received: {}",
+            index
+        );
+    }
+
+    for _ in 0..5000 {
+        let index = rng.f64();
+
+        assert!(
+            (0.0..=1.0).contains(&index),
+            "Must generate a number within 0.0 and 1.0, received: {}",
+            index
+        );
+    }
+
+    for _ in 0..5000 {
+        let index = rng.f64_normalized();
+
+        assert!(
+            (-1.0..=1.0).contains(&index),
+            "Must generate a number within -1.0 and 1.0, received: {}",
+            index
+        );
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn f32_range_spread_test() {
+    let rng = Rng::with_seed(Default::default());
+
+    let actual_histogram: BTreeMap<u32, u32> =
+        repeat_with(|| rng.f32() * 10.0)
+            .take(1000)
+            .fold(BTreeMap::new(), |mut histogram, key| {
+                *histogram.entry(key as u32).or_default() += 1;
+
+                histogram
+            });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (0, 97),
+        (1, 105),
+        (2, 98),
+        (3, 113),
+        (4, 109),
+        (5, 80),
+        (6, 99),
+        (7, 86),
+        (8, 102),
+        (9, 111),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
+    );
+
+    let actual_histogram: BTreeMap<i32, u32> = repeat_with(|| rng.f32_normalized() * 10.0)
+        .take(2000)
+        .fold(BTreeMap::new(), |mut histogram, key| {
+            *histogram.entry(key as i32).or_default() += 1;
+
+            histogram
+        });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (-9, 88),
+        (-8, 109),
+        (-7, 111),
+        (-6, 119),
+        (-5, 93),
+        (-4, 91),
+        (-3, 112),
+        (-2, 101),
+        (-1, 96),
+        (0, 195), // twice the amount because values less than -1.0 and 1.0 round to 0, so twice the range
+        (1, 109),
+        (2, 97),
+        (3, 125),
+        (4, 93),
+        (5, 102),
+        (6, 79),
+        (7, 92),
+        (8, 98),
+        (9, 90),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn f64_range_spread_test() {
+    let rng = Rng::with_seed(Default::default());
+
+    let actual_histogram: BTreeMap<u64, u32> =
+        repeat_with(|| rng.f64() * 10.0)
+            .take(1000)
+            .fold(BTreeMap::new(), |mut histogram, key| {
+                *histogram.entry(key as u64).or_default() += 1;
+
+                histogram
+            });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (0, 98),
+        (1, 95),
+        (2, 101),
+        (3, 102),
+        (4, 96),
+        (5, 103),
+        (6, 94),
+        (7, 99),
+        (8, 102),
+        (9, 110),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
+    );
+
+    let actual_histogram: BTreeMap<i64, u32> = repeat_with(|| rng.f64_normalized() * 10.0)
+        .take(2000)
+        .fold(BTreeMap::new(), |mut histogram, key| {
+            *histogram.entry(key as i64).or_default() += 1;
+
+            histogram
+        });
+
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (-9, 93),
+        (-8, 85),
+        (-7, 105),
+        (-6, 105),
+        (-5, 109),
+        (-4, 106),
+        (-3, 103),
+        (-2, 111),
+        (-1, 103),
+        (0, 197), // twice the amount because values less than -1.0 and 1.0 round to 0, so twice the range
+        (1, 85),
+        (2, 95),
+        (3, 92),
+        (4, 87),
+        (5, 103),
+        (6, 105),
+        (7, 111),
+        (8, 111),
+        (9, 94),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "unsigned samples should match in frequency to the expected histogram"
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn small_range_smoke_testing() {
     let rng = Rng::with_seed(Default::default());
 

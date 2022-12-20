@@ -139,6 +139,10 @@ impl<'de> Deserialize<'de> for ChaCha8 {
     {
         const FIELDS: &[&str] = &["state", "cache"];
 
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { State, Cache }
+
         struct ChaChaVisitor;
 
         impl<'de> Visitor<'de> for ChaChaVisitor {
@@ -171,19 +175,18 @@ impl<'de> Deserialize<'de> for ChaCha8 {
 
                 while let Some(key) = map.next_key()? {
                     match key {
-                        "state" => {
+                        Field::State => {
                             if state.is_some() {
                                 return Err(serde::de::Error::duplicate_field("state"));
                             }
                             state = Some(map.next_value()?);
                         }
-                        "cache" => {
+                        Field::Cache => {
                             if cache.is_some() {
                                 return Err(serde::de::Error::duplicate_field("cache"));
                             }
                             cache = Some(map.next_value()?);
                         }
-                        other => return Err(serde::de::Error::unknown_field(other, FIELDS)),
                     }
                 }
 

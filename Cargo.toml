@@ -1,6 +1,6 @@
 [package]
 name = "turborand"
-version = "0.8.2"
+version = "0.8.3"
 edition = "2021"
 authors = ["Gonçalo Rica Pais da Silva <bluefinger@gmail.com>"]
 description = "Fast random number generators"

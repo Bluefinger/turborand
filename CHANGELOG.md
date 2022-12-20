@@ -1,43 +1,50 @@
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
 ## [unreleased]
 
-### Miscellaneous Tasks
+### Chore
 
-- Prepare for release
+- Prepare release
 
-## [0.8.2] - 2022-11-21
+## [0.8.3] - 2022-12-20
 
-### Miscellaneous Tasks
+### Feat
+
+- Fix f64 codegen issues
+
+### Fix
+
+- Field enum for deserialising
+
+## [0.8.2] - 2022-11-22
+
+### Chore
 
 - Add more unit tests
+- Prepare for release
 
-### Performance
+### Perf
 
 - Improve buffer on large or known slice sizes
 - Simplify while loop for fill
 
 ## [0.8.1] - 2022-11-17
 
-### Features
-
-- Implement _mut sampling methods
-
-### Miscellaneous Tasks
+### Chore
 
 - No default criterion features in wasm
 - Explicit criterion features for non-wasm targets
 - Prepare for release
 
-### Performance
+### Feat
+
+- Implement _mut sampling methods
+
+### Perf
 
 - Improve fill_bytes throughput
 
 ## [0.8.0] - 2022-10-26
 
-### Miscellaneous Tasks
+### Chore
 
 - Format code
 - Prepare for release
@@ -48,7 +55,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.7.0] - 2022-09-28
 
-### Miscellaneous Tasks
+### Chore
 
 - Format code
 - Improve safety messages
@@ -63,23 +70,23 @@ All notable changes to this project will be documented in this file.
 
 ## [0.6.0] - 2022-08-18
 
-### Bug Fixes
+### Chore
 
-- Don't leak state via Debug
-- Empty buffer on reseed, add safety comments
-- Don't reset buffer on block state overflow
-- Fix Miri arguments once more
-- Fix rand and secure feature flag compilation
-- Provide auto-trait implementation, plus tests
+- Fix Miri flags
+- Add note about removal of macros.
+- Prepare for release
 
-### Documentation
+### Doc
+
+- Improve clarity of feature listing
+
+### Docs
 
 - Added traits & SecureRng docs, plus minor tweaks
 - Update description of crate
-- Improve clarity of feature listing
 - Document migration notes in README
 
-### Features
+### Feat
 
 - Basic implementation of ChaCha8 source.
 - Traitification, moved method impls to set of traits
@@ -91,13 +98,16 @@ All notable changes to this project will be documented in this file.
 - Serialise feature & AlignedSeed optimisation
 - Serialisation,  plus tidy-ups
 
-### Miscellaneous Tasks
+### Fix
 
-- Fix Miri flags
-- Add note about removal of macros.
-- Prepare for release
+- Don't leak state via Debug
+- Empty buffer on reseed, add safety comments
+- Don't reset buffer on block state overflow
+- Fix Miri arguments once more
+- Fix rand and secure feature flag compilation
+- Provide auto-trait implementation, plus tests
 
-### Performance
+### Perf
 
 - Optimise init and fill perf by removing Option
 - Add assert for optimising pack_into_u32
@@ -116,34 +126,34 @@ All notable changes to this project will be documented in this file.
 
 ## [0.5.1] - 2022-07-13
 
-### Documentation
-
-- Document added features
-- Fix up references
-
-### Features
-
-- Make generate_entropy more flexible with output
-- Create compatibility layer with rand_core
-- Implement serialize feature
-
-### Miscellaneous Tasks
+### Chore
 
 - Use native endian byte methods for generate_entropy
 - Remove unnecessary checks, tidy up docs
 - Revise release version
 
+### Doc
+
+- Document added features
+- Fix up references
+
+### Feat
+
+- Make generate_entropy more flexible with output
+- Create compatibility layer with rand_core
+- Implement serialize feature
+
 ## [0.5.0] - 2022-07-05
 
-### Features
-
-- Fill_bytes method
-
-### Miscellaneous Tasks
+### Chore
 
 - Prepare v0.5.0
 
-### Performance
+### Feat
+
+- Fill_bytes method
+
+### Perf
 
 - Inline more methods
 - More inlining
@@ -154,84 +164,76 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4] - 2022-06-28
 
-### Features
-
-- Implement char range method
-
-### Miscellaneous Tasks
+### Chore
 
 - Expose some tests to WASM and make them more robust
 - Enable entropy generation testing in smoke tests
 - Prepare new release version
 
-### Refactor
+### Feat
 
-- Better macros and 128 bit integer range methods
+- Implement char range method
 
 ### Reat
 
 - Sample multiple method
 
+### Refactor
+
+- Better macros and 128 bit integer range methods
+
 ## [0.3.1] - 2022-06-14
 
-### Bug Fixes
+### Fix
 
 - Add necessary attributes to build docs
 
 ## [0.3.0] - 2022-06-14
 
-### Bug Fixes
+### Chore
 
-- Add rustdoc arguments
+- Add floating point method benches
+- Prepare new version
 
-### Documentation
+### Doc
 
 - Add more examples
 
-### Features
+### Feat
 
 - Benchmarking, optimisations and better panic messages
 - Implement shuffle method
 - Implement random character methods
 
-### Miscellaneous Tasks
+### Fix
 
-- Add floating point method benches
-- Prepare new version
+- Add rustdoc arguments
 
 ## [0.2.0] - 2022-06-12
 
-### Bug Fixes
+### Chore
 
-- Better handling of signed & unsigned ranges
-- Use wrapping_sub for range
+- Exclude github directories from package
 
-### Documentation
+### Docs
 
 - Use new macro where appropriate
 
-### Features
+### Feat
 
 - Debug impl and requirement for State trait
 - Implement atomic state and feature flag
 - Improve rng macro
 - Atomic rng macro and more docs
 
-### Miscellaneous Tasks
+### Fix
 
-- Exclude github directories from package
+- Better handling of signed & unsigned ranges
+- Use wrapping_sub for range
 
 ## [0.1.0] - 2022-06-10
 
-### Bug Fixes
-
-- Point to correct main branch
-
-### Features
-
-- Let there be random noise
-
-### Miscellaneous Tasks
+### Chore
 
 - Create README
 - License the project
@@ -243,4 +245,11 @@ All notable changes to this project will be documented in this file.
 - Improve README
 - More badges
 
-<!-- generated by git-cliff -->
+### Feat
+
+- Let there be random noise
+
+### Fix
+
+- Point to correct main branch
+

@@ -48,8 +48,14 @@
 //! so when set as `default-features = false` in the Cargo.toml. By default,
 //! it will have `wyrand` feature enabled as the basic PRNG exposed.
 //!
+//! * **`alloc`** - Enables support for boxed [`TurboCore`] references, as well
+//!   as [`TurboRand`] methods that return [`Vec`] results.
+//! * **`fmt`** - Enables [`core::fmt::Debug`] implementations for [`rng::Rng`]
+//!   & [`chacha_rng::ChaChaRng`].
+//! * **`std`** - Enables `std` features, such as `alloc` methods as well as
+//!   [`Default`] implementations for [`rng::Rng`] & [`chacha_rng::ChaChaRng`].
 //! * **`wyrand`** - Enables [`rng::Rng`], so to provide a
-//!   basic, non-threadsafe PRNG. Enabled by default.
+//!   basic, non-threadsafe PRNG. Enabled by default. `no-std` compatible.
 //! * **`atomic`** - Enables [`rng::AtomicRng`], so
 //!   to provide a thread-safe variation of [`rng::Rng`]. Enables `wyrand`
 //!   feature implicitly. **Note**, this is slower than [`rng::Rng`].
@@ -60,18 +66,32 @@
 //!   respective features activated as well.
 //! * **`chacha`** - Enables [`chacha_rng::ChaChaRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`rng::Rng`] in
-//!   throughput, but will produce much higher quality randomness.
+//!   throughput, but will produce much higher quality randomness. Currently relies on
+//!   `std` features to reset state once internal counter is exhausted, so enabling
+//!   `chacha` will enable `std` feature.
 #![warn(missing_docs, rust_2018_idioms)]
 #![forbid(clippy::undocumented_unsafe_blocks)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(any(feature = "wyrand", feature = "chacha"))]
-use std::{fmt::Debug, rc::Rc};
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
-#[cfg(all(target_arch = "wasm32", any(feature = "wyrand", feature = "chacha")))]
+#[cfg(all(feature = "std", any(feature = "wyrand", feature = "chacha")))]
+use alloc::rc::Rc;
+
+#[cfg(all(feature = "fmt", any(feature = "wyrand", feature = "chacha")))]
+use core::fmt::Debug;
+
+#[cfg(all(
+    feature = "std",
+    target_arch = "wasm32",
+    any(feature = "wyrand", feature = "chacha")
+))]
 use instant::Instant;
 #[cfg(all(
+    feature = "std",
     not(target_arch = "wasm32"),
     any(feature = "wyrand", feature = "chacha")
 ))]
@@ -98,7 +118,7 @@ pub mod chacha_rng;
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub mod compatibility;
-#[cfg(any(feature = "wyrand", feature = "chacha"))]
+#[cfg(all(feature = "std", any(feature = "wyrand", feature = "chacha")))]
 mod entropy;
 mod internal;
 #[cfg(any(feature = "wyrand", feature = "atomic"))]

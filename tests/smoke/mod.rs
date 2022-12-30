@@ -1,11 +1,4 @@
-use std::{collections::BTreeMap, iter::repeat_with, ops::RangeBounds};
-use turborand::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_test::*;
-
-#[cfg(target_arch = "wasm32")]
-wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+use crate::*;
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -33,6 +26,7 @@ fn range_determinism_testing() {
     assert!(value, "Not the expect boolean: got {}", value);
 }
 
+#[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_smoke_testing() {
@@ -99,6 +93,7 @@ fn range_smoke_testing() {
     }
 }
 
+#[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn float_smoke_testing() {
@@ -145,6 +140,7 @@ fn float_smoke_testing() {
     }
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn f32_range_spread_test() {
@@ -213,6 +209,7 @@ fn f32_range_spread_test() {
     );
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn f64_range_spread_test() {
@@ -294,6 +291,7 @@ fn small_range_smoke_testing() {
     assert_eq!((val1, val2, val3, val4), (0, 0, 1, -1));
 }
 
+#[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unbounded_range_smoke_testing() {
@@ -330,6 +328,7 @@ fn unbounded_range_smoke_testing() {
     }
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unsigned_range_spread_test() {
@@ -363,6 +362,7 @@ fn unsigned_range_spread_test() {
     );
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn signed_range_spread_test() {
@@ -397,6 +397,7 @@ fn signed_range_spread_test() {
     );
 }
 
+#[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn character_smoke_testing() {
@@ -443,6 +444,7 @@ fn character_smoke_testing() {
     }
 }
 
+#[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn digit_smoke_testing() {
@@ -638,6 +640,7 @@ fn sample_spread_testing() {
     );
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn sample_multiple_spread_testing() {
@@ -661,6 +664,7 @@ fn sample_multiple_spread_testing() {
     );
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn weighted_sample_spread_testing() {

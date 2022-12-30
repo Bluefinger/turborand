@@ -1,7 +1,10 @@
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
 
-use crate::{entropy::generate_entropy, internal::buffer::EntropyBuffer, Debug};
+use crate::{entropy::generate_entropy, internal::buffer::EntropyBuffer};
 use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
+
+#[cfg(feature = "fmt")]
+use crate::Debug;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize, SerializeStruct, Visitor};
@@ -103,8 +106,9 @@ impl Clone for ChaCha8 {
     }
 }
 
+#[cfg(feature = "fmt")]
 impl Debug for ChaCha8 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("ChaCha8").finish()
     }
 }
@@ -148,7 +152,7 @@ impl<'de> Deserialize<'de> for ChaCha8 {
         impl<'de> Visitor<'de> for ChaChaVisitor {
             type Value = ChaCha8;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 formatter.write_str("struct ChaCha8")
             }
 
@@ -219,6 +223,7 @@ mod tests {
         };
     }
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn no_leaking_debug() {
         let source = ChaCha8::with_seed([0u8; 40].into());

@@ -1,7 +1,10 @@
-use std::{
+use core::{
     iter::repeat_with,
     ops::{Bound, RangeBounds},
 };
+
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
 
 /// Base trait for implementing a PRNG. Only one method must be
 /// implemented: [`TurboCore::fill_bytes`], which provides the basis
@@ -14,11 +17,11 @@ use std::{
 /// When implementing on top of [`TurboCore`], the following considerations
 /// should be made:
 ///
-/// * [`Default`] - should be implemented, but defaults should be
-///   non-deterministic. It should initialise with a randomised seed as
+/// * [`Default`] - should be implemented for `std` platforms, but defaults should
+///   be non-deterministic. It should initialise with a randomised seed as
 ///   a default, with the intent being quick and simple but random
 ///   number generation.
-/// * [`std::fmt::Debug`] - should be implemented, but with care so to not leak
+/// * [`core::fmt::Debug`] - should be implemented, but with care so to not leak
 ///   the internal state of the PRNG.
 /// * [`PartialEq`] - should be implemented along with [`Eq`], so that
 ///   easy comparisons can be made with PRNGs to see if they are in the
@@ -405,6 +408,7 @@ pub trait TurboRand: TurboCore + GenCore {
     ///
     /// assert_eq!(rng.sample_multiple(&values, 2), vec![&6, &4]);
     /// ```
+    #[cfg(feature = "alloc")]
     #[inline]
     fn sample_multiple<'a, T>(&self, list: &'a [T], amount: usize) -> Vec<&'a T> {
         let draining = list.len().min(amount);
@@ -432,6 +436,7 @@ pub trait TurboRand: TurboCore + GenCore {
     ///
     /// assert_eq!(rng.sample_multiple_mut(&mut values, 2), vec![&mut 6, &mut 4]);
     /// ```
+    #[cfg(feature = "alloc")]
     #[inline]
     fn sample_multiple_mut<'a, T>(&self, list: &'a mut [T], amount: usize) -> Vec<&'a mut T> {
         let draining = list.len().min(amount);
@@ -469,7 +474,7 @@ pub trait TurboRand: TurboCore + GenCore {
     #[inline]
     fn weighted_sample<'a, T, F>(&self, list: &'a [T], weight_sampler: F) -> Option<&'a T>
     where
-        F: Fn(&'a T) -> f64,
+        F: Fn(&T) -> f64,
     {
         // Check how many items are in the list
         match list.len() {
@@ -741,6 +746,7 @@ pub trait ForkableCore: TurboCore {
 
 impl<T: TurboCore + GenCore + ?Sized> TurboRand for T {}
 
+#[cfg(feature = "alloc")]
 impl<T: TurboCore + ?Sized> TurboCore for Box<T> {
     #[inline(always)]
     fn fill_bytes(&self, buffer: &mut [u8]) {
@@ -748,6 +754,7 @@ impl<T: TurboCore + ?Sized> TurboCore for Box<T> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<T: GenCore + ?Sized> GenCore for Box<T> {
     #[inline(always)]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
@@ -783,6 +790,7 @@ impl<'a, T: GenCore + ?Sized> GenCore for &'a mut T {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<T: TurboCore + SecureCore + ?Sized> SecureCore for Box<T> {}
 
 /// Computes `(a * b) >> 128`. Adapted from: https://stackoverflow.com/a/28904636
@@ -806,11 +814,10 @@ fn multiply_high_u128(a: u128, b: u128) -> u128 {
 
 #[cfg(test)]
 mod tests {
-    use std::cell::Cell;
+    use core::cell::Cell;
 
     use super::*;
 
-    #[derive(Debug, Default)]
     struct TestRng(Cell<u8>);
 
     impl TestRng {
@@ -886,6 +893,7 @@ mod tests {
         test_seeded_methods(&rng);
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn object_safe_core() {
         let rng = Box::new(TestRng::with_seed(1));
@@ -901,6 +909,7 @@ mod tests {
         test_dyn_rng(rng);
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn boxed_methods() {
         let rng = Box::new(TestRng::with_seed(1));

@@ -19,8 +19,9 @@ use crate::rng::AtomicRng;
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandCompat<T: TurboCore + GenCore + Default>(T);
+pub struct RandCompat<T: TurboCore + GenCore>(T);
 
+#[cfg(feature = "std")]
 impl<T: TurboCore + GenCore + Default> RandCompat<T> {
     /// Creates a new [`RandCompat`] with a randomised seed.
     ///
@@ -43,6 +44,7 @@ impl<T: TurboCore + GenCore + Default> RandCompat<T> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<T: TurboCore + GenCore + Default> Default for RandCompat<T> {
     /// Initialises a default instance of [`RandCompat`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
@@ -63,7 +65,7 @@ impl<T: TurboCore + GenCore + Default> Default for RandCompat<T> {
     }
 }
 
-impl<T: TurboCore + GenCore + Default> RngCore for RandCompat<T> {
+impl<T: TurboCore + GenCore> RngCore for RandCompat<T> {
     #[inline]
     fn next_u32(&mut self) -> u32 {
         self.0.gen_u32()
@@ -86,7 +88,7 @@ impl<T: TurboCore + GenCore + Default> RngCore for RandCompat<T> {
     }
 }
 
-impl<T: TurboCore + GenCore + Default> From<T> for RandCompat<T> {
+impl<T: TurboCore + GenCore> From<T> for RandCompat<T> {
     #[inline]
     fn from(rng: T) -> Self {
         Self(rng)
@@ -126,9 +128,9 @@ impl From<RandCompat<ChaChaRng>> for ChaChaRng {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
-pub struct RandBorrowed<'a, T: TurboCore + GenCore + Default>(&'a mut T);
+pub struct RandBorrowed<'a, T: TurboCore + GenCore>(&'a mut T);
 
-impl<'a, T: TurboCore + GenCore + Default> From<&'a mut T> for RandBorrowed<'a, T> {
+impl<'a, T: TurboCore + GenCore> From<&'a mut T> for RandBorrowed<'a, T> {
     /// Convert a [`TurboCore`] reference into a [`RandBorrowed`] struct,
     /// allowing a borrowed reference to be used with the `rand` crate
     /// ecosystem.

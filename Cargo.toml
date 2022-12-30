@@ -1,13 +1,13 @@
 [package]
 name = "turborand"
-version = "0.8.3"
+version = "0.9.0"
 edition = "2021"
 authors = ["Gonçalo Rica Pais da Silva <bluefinger@gmail.com>"]
 description = "Fast random number generators"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Bluefinger/turborand"
 keywords = ["fast", "rand", "random", "wyrand", "chacha"]
-categories = ["algorithms"]
+categories = ["algorithms", "no-std"]
 exclude = ["/.*"]
 resolver = "2"
 
@@ -39,12 +39,15 @@ name = "rand_bench"
 harness = false
 
 [features]
-default = ["wyrand"]
+default = ["wyrand", "fmt", "std"]
+std = ["alloc", "dep:getrandom"]
+alloc = []
+fmt = []
 atomic = ["wyrand"]
-wyrand = ["dep:getrandom"]
-chacha = ["dep:bytemuck", "dep:getrandom"]
+wyrand = []
+chacha = ["dep:bytemuck", "std"]
 rand = ["dep:rand_core"]
-serialize = ["dep:serde"]
+serialize = ["dep:serde", "fmt"]
 
 [package.metadata.docs.rs]
 all-features = true

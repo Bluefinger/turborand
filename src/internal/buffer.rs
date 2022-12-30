@@ -1,9 +1,9 @@
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize, SerializeTuple, Visitor};
 
-#[derive(Debug)]
+#[cfg_attr(feature = "fmt", derive(Debug))]
 pub(crate) struct EntropyBuffer<const SIZE: usize> {
     buffer: UnsafeCell<[u64; SIZE]>,
     cursor: UnsafeCell<usize>,
@@ -256,7 +256,7 @@ impl<'de, const SIZE: usize> Deserialize<'de> for EntropyBuffer<SIZE> {
         impl<'de, const LENGTH: usize> Visitor<'de> for EntropyVisitor<LENGTH> {
             type Value = EntropyBuffer<LENGTH>;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 write!(formatter, "struct EntropyBuffer<{LENGTH}>")
             }
 

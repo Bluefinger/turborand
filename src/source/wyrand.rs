@@ -1,7 +1,7 @@
-use crate::{
-    internal::state::{CellState, State},
-    Debug,
-};
+use crate::internal::state::{CellState, State};
+
+#[cfg(feature = "fmt")]
+use crate::Debug;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
@@ -10,11 +10,11 @@ use crate::{Deserialize, Serialize};
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub(crate) struct WyRand<S: Debug + State = CellState> {
+pub(crate) struct WyRand<S: State = CellState> {
     state: S,
 }
 
-impl<S: State + Debug> WyRand<S> {
+impl<S: State> WyRand<S> {
     /// Creates a new [`WyRand`] source with seeded value.
     #[inline]
     pub(crate) fn with_seed(seed: u64) -> Self {
@@ -69,8 +69,9 @@ impl<S: State + Debug> WyRand<S> {
     }
 }
 
+#[cfg(feature = "fmt")]
 impl<S: State + Debug> Debug for WyRand<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("WyRand").field(&self.state).finish()
     }
 }
@@ -117,6 +118,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn clone() {
         let rng1 = WyRand::<CellState>::with_seed(1);
@@ -140,6 +142,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn no_leaking_debug() {
         let rng = WyRand::<CellState>::with_seed(Default::default());

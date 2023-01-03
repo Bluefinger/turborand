@@ -1,5 +1,6 @@
+use crate::*;
+
 use std::{collections::HashSet, convert::TryFrom, ops::RangeBounds};
-use turborand::prelude::*;
 
 fn char_coverage_stress_test<R>(n: usize, range: R)
 where
@@ -19,6 +20,7 @@ where
     assert_eq!(covered, all, "Missing coverage in output");
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn char_battery_tests() {
     // ASCII control chars.

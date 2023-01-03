@@ -1,9 +1,10 @@
-use std::cell::Cell;
+use core::cell::Cell;
 
+#[cfg(feature = "fmt")]
 use crate::Debug;
 
 #[cfg(feature = "atomic")]
-use std::sync::atomic::{AtomicU64, Ordering};
+use core::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
@@ -59,8 +60,9 @@ impl State for CellState {
     }
 }
 
+#[cfg(feature = "fmt")]
 impl Debug for CellState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("CellState").finish()
     }
 }
@@ -129,9 +131,9 @@ impl PartialEq for AtomicState {
 #[cfg(feature = "atomic")]
 impl Eq for AtomicState {}
 
-#[cfg(feature = "atomic")]
+#[cfg(all(feature = "fmt", feature = "atomic"))]
 impl Debug for AtomicState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("AtomicState").finish()
     }
 }
@@ -167,7 +169,7 @@ impl<'de> Deserialize<'de> for AtomicState {
         impl Visitor<'_> for AtomicU64Visitor {
             type Value = u64;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 formatter.write_str("u64 state")
             }
 
@@ -182,7 +184,7 @@ impl<'de> Deserialize<'de> for AtomicState {
         impl<'de> Visitor<'de> for AtomicStateVisitor {
             type Value = AtomicState;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 formatter.write_str("NewtypeStruct AtomicState")
             }
 
@@ -219,6 +221,7 @@ mod tests {
         assert_eq!(state.get(), 11);
     }
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn cell_state_no_leaking_debug() {
         let state = CellState::with_seed(Default::default());
@@ -242,7 +245,7 @@ mod tests {
         assert_eq!(state.get(), 11);
     }
 
-    #[cfg(feature = "atomic")]
+    #[cfg(all(feature = "fmt", feature = "atomic"))]
     #[test]
     fn atomic_state_no_leaking_debug() {
         let state = AtomicState::with_seed(Default::default());

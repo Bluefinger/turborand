@@ -1,9 +1,15 @@
 //! A fast but **not** cryptographically secure PRNG based on [Wyrand](https://github.com/wangyi-fudan/wyhash).
 
 use crate::{
-    entropy::generate_entropy, internal::state::CellState, source::wyrand::WyRand, Debug,
-    ForkableCore, GenCore, Rc, SeededCore, TurboCore,
+    internal::state::CellState, source::wyrand::WyRand, ForkableCore, GenCore, SeededCore,
+    TurboCore,
 };
+
+#[cfg(feature = "std")]
+use crate::{entropy::generate_entropy, Rc};
+
+#[cfg(feature = "fmt")]
+use crate::Debug;
 
 #[cfg(feature = "atomic")]
 use crate::internal::state::AtomicState;
@@ -12,12 +18,14 @@ use crate::internal::state::AtomicState;
 use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `WyRand` algorithm.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "fmt", derive(Debug))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(feature = "wyrand")))]
 #[repr(transparent)]
 pub struct Rng(WyRand<CellState>);
 
+#[cfg(feature = "std")]
 impl Rng {
     /// Creates a new [`Rng`] with a randomised seed.
     #[inline]
@@ -62,6 +70,7 @@ impl SeededCore for Rng {
     }
 }
 
+#[cfg(feature = "std")]
 impl Default for Rng {
     /// Initialises a default instance of [`Rng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
@@ -92,13 +101,14 @@ impl ForkableCore for Rng {
 /// A Random Number generator, powered by the `WyRand` algorithm, but with
 /// thread-safe internal state.
 #[cfg(feature = "atomic")]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
+#[cfg_attr(feature = "fmt", derive(Debug))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(docsrs, doc(cfg(all(feature = "wyrand", feature = "atomic"))))]
 #[repr(transparent)]
 pub struct AtomicRng(WyRand<AtomicState>);
 
-#[cfg(feature = "atomic")]
+#[cfg(all(feature = "std", feature = "atomic"))]
 impl AtomicRng {
     /// Creates a new [`AtomicRng`] with a randomised seed.
     #[inline]
@@ -108,7 +118,7 @@ impl AtomicRng {
     }
 }
 
-#[cfg(feature = "atomic")]
+#[cfg(all(feature = "std", feature = "atomic"))]
 impl Default for AtomicRng {
     /// Initialises a default instance of [`AtomicRng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
@@ -195,6 +205,7 @@ impl SeededCore for AtomicRng {
     }
 }
 
+#[cfg(feature = "std")]
 thread_local! {
     static RNG: Rc<Rng> = Rc::new(Rng(WyRand::with_seed(
         u64::from_ne_bytes(generate_entropy::<{ core::mem::size_of::<u64>() }>()),
@@ -208,6 +219,7 @@ mod tests {
 
     use super::*;
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn rng_no_leaking_debug() {
         let rng = Rng::with_seed(Default::default());
@@ -215,7 +227,7 @@ mod tests {
         assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
     }
 
-    #[cfg(feature = "atomic")]
+    #[cfg(all(feature = "fmt", feature = "atomic"))]
     #[test]
     fn atomic_no_leaking_debug() {
         let rng = AtomicRng::with_seed(Default::default());

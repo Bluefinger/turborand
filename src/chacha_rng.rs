@@ -1,21 +1,27 @@
 //! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
-    entropy::generate_entropy, source::chacha::ChaCha8, ForkableCore, GenCore, Rc, SecureCore,
-    SeededCore, TurboCore,
+    source::chacha::{utils::AlignedSeed, ChaCha8},
+    ForkableCore, GenCore, SecureCore, SeededCore, TurboCore,
 };
 
-use crate::source::chacha::utils::AlignedSeed;
+#[cfg(feature = "std")]
+use crate::{entropy::generate_entropy, Rc};
+
+#[cfg(feature = "fmt")]
+use crate::Debug;
 
 #[cfg(feature = "serialize")]
 use crate::{Deserialize, Serialize};
 
 /// A Random Number generator, powered by the `ChaCha8` algorithm.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "fmt", derive(Debug))]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(docsrs, doc(cfg(feature = "chacha")))]
 #[repr(transparent)]
 pub struct ChaChaRng(ChaCha8);
 
+#[cfg(feature = "std")]
 impl ChaChaRng {
     /// Creates a new [`ChaChaRng`] with a randomised seed.
     #[inline]
@@ -70,6 +76,7 @@ impl ForkableCore for ChaChaRng {
 
 impl SecureCore for ChaChaRng {}
 
+#[cfg(feature = "std")]
 impl Default for ChaChaRng {
     /// Initialises a default instance of [`ChaChaRng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
@@ -89,6 +96,7 @@ impl Default for ChaChaRng {
     }
 }
 
+#[cfg(feature = "std")]
 thread_local! {
     static SECURE: Rc<ChaChaRng> = Rc::new(ChaChaRng::with_seed(generate_entropy()));
 }
@@ -97,6 +105,7 @@ thread_local! {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "fmt")]
     #[test]
     fn no_leaking_debug() {
         let rng = ChaChaRng::with_seed([0u8; 40]);

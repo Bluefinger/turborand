@@ -34,7 +34,7 @@ jobs:
         run: cargo check -Z features=dev_dep
       - run: cargo test --all-features
       - name: Test wasm
-        run: wasm-pack test --headless --chrome --firefox -- --features chacha,atomic,rand
+        run: wasm-pack test --headless --chrome --firefox -- --features chacha,atomic,rand,std,fmt
         if: startsWith(matrix.os, 'ubuntu')
   miri:
     name: "Miri"

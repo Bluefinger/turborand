@@ -20,14 +20,14 @@ impl std::ops::Deref for AlignedSeed {
 }
 
 #[inline]
-pub(super) fn increment_counter(mut state: [u32; 16]) -> Option<[u32; 16]> {
+pub(super) fn increment_counter(mut state: [u32; 16]) -> [u32; 16] {
     let counter = ((state[13] as u64) << 32) | (state[12] as u64);
 
-    counter.checked_add(1).map(|updated_counter| {
-        state[12] = (updated_counter & 0xFFFF_FFFF) as u32;
-        state[13] = ((updated_counter >> 32) & 0xFFFF_FFFF) as u32;
-        state
-    })
+    let counter = counter.wrapping_add(1);
+
+    state[12] = (counter & 0xFFFF_FFFF) as u32;
+    state[13] = ((counter >> 32) & 0xFFFF_FFFF) as u32;
+    state
 }
 
 #[inline]

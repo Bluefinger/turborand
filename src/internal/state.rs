@@ -131,7 +131,7 @@ impl PartialEq for AtomicState {
 #[cfg(feature = "atomic")]
 impl Eq for AtomicState {}
 
-#[cfg(all( feature = "fmt", feature = "atomic"))]
+#[cfg(all(feature = "fmt", feature = "atomic"))]
 impl Debug for AtomicState {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("AtomicState").finish()

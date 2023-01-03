@@ -1,7 +1,7 @@
 use core::cell::UnsafeCell;
 
-use crate::{entropy::generate_entropy, internal::buffer::EntropyBuffer};
-use utils::{calculate_block, increment_counter, init_state, AlignedSeed};
+use self::utils::{calculate_block, increment_counter, init_state, AlignedSeed};
+use crate::internal::buffer::EntropyBuffer;
 
 #[cfg(feature = "fmt")]
 use crate::Debug;
@@ -71,14 +71,9 @@ impl ChaCha8 {
     fn generate(&self) -> [u32; 16] {
         let new_state = calculate_block::<4>(self.get_state());
 
-        let output = new_state;
+        self.update_state(increment_counter(new_state));
 
-        increment_counter(new_state).map_or_else(
-            || self.update_state(init_state(generate_entropy().into())),
-            |updated_state| self.update_state(updated_state),
-        );
-
-        output
+        new_state
     }
 
     #[inline]
@@ -145,7 +140,10 @@ impl<'de> Deserialize<'de> for ChaCha8 {
 
         #[derive(Deserialize)]
         #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field { State, Cache }
+        enum Field {
+            State,
+            Cache,
+        }
 
         struct ChaChaVisitor;
 

@@ -45,7 +45,7 @@ alloc = []
 fmt = []
 atomic = ["wyrand"]
 wyrand = []
-chacha = ["dep:bytemuck", "std"]
+chacha = ["dep:bytemuck"]
 rand = ["dep:rand_core"]
 serialize = ["dep:serde", "fmt"]
 

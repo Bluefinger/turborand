@@ -40,14 +40,14 @@ harness = false
 
 [features]
 default = ["wyrand", "fmt", "std"]
-std = ["alloc", "dep:getrandom"]
-alloc = []
-fmt = []
-atomic = ["wyrand"]
-wyrand = []
-chacha = ["dep:bytemuck"]
-rand = ["dep:rand_core"]
-serialize = ["dep:serde", "fmt"]
+std = ["alloc", "dep:getrandom"] # Enables Default and new constructors
+alloc = [] # Enables Vec methods and Box support without explicit std
+fmt = [] # Enables Debug support, required for testing
+atomic = ["wyrand"] # Enables AtomicRng
+wyrand = [] # Enables Rng
+chacha = ["dep:bytemuck"] # Enables ChaChaRng
+rand = ["dep:rand_core"] # Enables compatibility wrappers for interop with rand
+serialize = ["dep:serde", "fmt"] # Enables serialisation/deserialisation
 
 [package.metadata.docs.rs]
 all-features = true

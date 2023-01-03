@@ -66,9 +66,7 @@
 //!   respective features activated as well.
 //! * **`chacha`** - Enables [`chacha_rng::ChaChaRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`rng::Rng`] in
-//!   throughput, but will produce much higher quality randomness. Currently relies on
-//!   `std` features to reset state once internal counter is exhausted, so enabling
-//!   `chacha` will enable `std` feature.
+//!   throughput, but will produce much higher quality randomness. `no-std` compatible.
 #![warn(missing_docs, rust_2018_idioms)]
 #![forbid(clippy::undocumented_unsafe_blocks)]
 #![cfg_attr(docsrs, feature(doc_cfg))]

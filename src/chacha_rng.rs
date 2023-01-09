@@ -22,6 +22,7 @@ use crate::{Deserialize, Serialize};
 pub struct ChaChaRng(ChaCha8);
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl ChaChaRng {
     /// Creates a new [`ChaChaRng`] with a randomised seed.
     #[inline]
@@ -77,6 +78,7 @@ impl ForkableCore for ChaChaRng {
 impl SecureCore for ChaChaRng {}
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Default for ChaChaRng {
     /// Initialises a default instance of [`ChaChaRng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.

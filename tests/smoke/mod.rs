@@ -640,6 +640,27 @@ fn sample_spread_testing() {
     );
 }
 
+#[test]
+#[cfg(target_pointer_width = "64")]
+fn sample_iter_spread_testing() {
+    let rng = Rng::with_seed(Default::default());
+
+    let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
+    let mut sampled = [0; 8];
+
+    for _ in 0..2000 {
+        let index = rng.sample_iter(indexes.iter()).unwrap();
+
+        sampled[*index] += 1;
+    }
+
+    assert_eq!(
+        &sampled,
+        &[214, 238, 267, 241, 237, 276, 261, 266],
+        "samples will occur across all array items at statistically equal chance"
+    );
+}
+
 #[cfg(feature = "alloc")]
 #[test]
 #[cfg(target_pointer_width = "64")]
@@ -659,7 +680,31 @@ fn sample_multiple_spread_testing() {
 
     assert_eq!(
         &sampled,
-        &[399, 369, 391, 377, 373, 384, 345, 362],
+        &[390, 364, 387, 359, 407, 377, 365, 351],
+        "samples will occur across all array items at statistically equal chance"
+    );
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+#[cfg(target_pointer_width = "64")]
+fn sample_multiple_iter_spread_testing() {
+    let rng = Rng::with_seed(Default::default());
+
+    let indexes: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
+    let mut sampled = [0; 8];
+
+    for _ in 0..1000 {
+        let selected = rng.sample_multiple_iter(indexes.iter(), 3);
+
+        selected
+            .into_iter()
+            .for_each(|sample| sampled[*sample] += 1);
+    }
+
+    assert_eq!(
+        &sampled,
+        &[390, 364, 387, 359, 407, 377, 365, 351],
         "samples will occur across all array items at statistically equal chance"
     );
 }

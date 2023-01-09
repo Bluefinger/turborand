@@ -363,6 +363,80 @@ pub trait TurboRand: TurboCore + GenCore {
         }
     }
 
+    /// Samples a random item from an iterator of values.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// assert_eq!(rng.sample_iter(values.iter_mut()), Some(&mut 5));
+    /// ```
+    #[inline]
+    fn sample_iter<T: Iterator>(&self, mut list: T) -> Option<T::Item> {
+        let (mut lower, mut upper) = list.size_hint();
+
+        if upper == Some(lower) {
+            return match lower {
+                0 => None,
+                1 => list.next(),
+                _ => list.nth(self.usize(0..lower)),
+            };
+        }
+
+        let mut result = None;
+        let mut consumed = 0;
+
+        // Continue until the iterator is exhausted
+        loop {
+            if lower > 1 {
+                let index = self.usize(0..lower + consumed);
+                let skip = if index < lower {
+                    result = list.nth(index);
+                    lower - (index + 1)
+                } else {
+                    lower
+                };
+
+                if upper == Some(lower) {
+                    return result;
+                }
+
+                consumed += lower;
+
+                if skip > 0 {
+                    list.nth(skip - 1);
+                }
+            } else {
+                let elem = list.next();
+
+                if elem.is_none() {
+                    return result;
+                }
+
+                consumed += 1;
+
+                match consumed {
+                    1 => {
+                        result = elem;
+                    }
+                    _ => {
+                        if self.usize(0..consumed) == 0 {
+                            result = elem;
+                        }
+                    }
+                };
+            }
+
+            let hint = list.size_hint();
+            lower = hint.0;
+            upper = hint.1;
+        }
+    }
+
     /// Samples a random `&mut` item from a slice of values.
     ///
     /// **NOTE**: Mutable references must be dropped before more can be
@@ -409,15 +483,10 @@ pub trait TurboRand: TurboCore + GenCore {
     /// assert_eq!(rng.sample_multiple(&values, 2), vec![&6, &4]);
     /// ```
     #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[inline]
     fn sample_multiple<'a, T>(&self, list: &'a [T], amount: usize) -> Vec<&'a T> {
-        let draining = list.len().min(amount);
-
-        let mut shuffled: Vec<&'a T> = list.iter().collect();
-
-        self.shuffle(&mut shuffled);
-
-        shuffled.drain(0..draining).collect()
+        self.sample_multiple_iter(list.iter(), amount)
     }
 
     /// Samples multiple unique items from a mutable slice of values.
@@ -437,15 +506,55 @@ pub trait TurboRand: TurboCore + GenCore {
     /// assert_eq!(rng.sample_multiple_mut(&mut values, 2), vec![&mut 6, &mut 4]);
     /// ```
     #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[inline]
     fn sample_multiple_mut<'a, T>(&self, list: &'a mut [T], amount: usize) -> Vec<&'a mut T> {
-        let draining = list.len().min(amount);
+        self.sample_multiple_iter(list.iter_mut(), amount)
+    }
 
-        let mut shuffled: Vec<&'a mut T> = list.iter_mut().collect();
+    /// Samples multiple unique items from an iterator of values.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// assert_eq!(rng.sample_multiple_iter(values.iter(), 2), vec![&6, &4]);
+    /// ```
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[inline]
+    fn sample_multiple_iter<T: Iterator>(&self, mut list: T, amount: usize) -> Vec<T::Item> {
+        // Adapted from: https://docs.rs/rand/latest/rand/seq/trait.IteratorRandom.html#method.choose_multiple
+        let mut sampled = Vec::with_capacity(amount);
 
-        self.shuffle(&mut shuffled);
+        sampled.extend(list.by_ref().take(amount));
 
-        shuffled.drain(0..draining).collect()
+        // Continue unless the iterator was exhausted.
+        // Note: this prevents iterators that "restart" from causing problems.
+        // If the iterator stops once, then so do we.
+        if sampled.len() == amount {
+            list.enumerate()
+                .map(|(index, elem)| {
+                    let len = index + amount;
+
+                    (self.usize(0..=len), elem)
+                })
+                .for_each(|(slot_index, elem)| {
+                    if let Some(slot) = sampled.get_mut(slot_index) {
+                        *slot = elem;
+                    }
+                });
+        } else {
+            // Shrink sampled vector if the available amount from the iterator
+            // is less than the requested amount.
+            sampled.shrink_to_fit();
+        }
+
+        sampled
     }
 
     /// [Stochastic Acceptance](https://arxiv.org/abs/1109.3627) implementation of Roulette Wheel
@@ -537,7 +646,7 @@ pub trait TurboRand: TurboCore + GenCore {
     /// ```
     #[inline]
     fn weighted_sample_mut<'a, T, F>(
-        &'a self,
+        &self,
         list: &'a mut [T],
         weight_sampler: F,
     ) -> Option<&'a mut T>

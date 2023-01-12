@@ -26,6 +26,7 @@ use crate::{Deserialize, Serialize};
 pub struct Rng(WyRand<CellState>);
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Rng {
     /// Creates a new [`Rng`] with a randomised seed.
     #[inline]
@@ -71,6 +72,7 @@ impl SeededCore for Rng {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Default for Rng {
     /// Initialises a default instance of [`Rng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.
@@ -109,6 +111,7 @@ impl ForkableCore for Rng {
 pub struct AtomicRng(WyRand<AtomicState>);
 
 #[cfg(all(feature = "std", feature = "atomic"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl AtomicRng {
     /// Creates a new [`AtomicRng`] with a randomised seed.
     #[inline]
@@ -119,6 +122,7 @@ impl AtomicRng {
 }
 
 #[cfg(all(feature = "std", feature = "atomic"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Default for AtomicRng {
     /// Initialises a default instance of [`AtomicRng`]. Warning, the default is
     /// seeded with a randomly generated state, so this is **not** deterministic.

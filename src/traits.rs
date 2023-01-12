@@ -1,7 +1,4 @@
-use core::{
-    iter::repeat_with,
-    ops::{Bound, RangeBounds},
-};
+use core::ops::{Bound, RangeBounds};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
@@ -354,12 +351,84 @@ pub trait TurboRand: TurboCore + GenCore {
     /// ```
     #[inline]
     fn sample<'a, T>(&self, list: &'a [T]) -> Option<&'a T> {
-        match list.len() {
-            0 => None,
-            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
-            1 => unsafe { Some(list.get_unchecked(0)) },
-            // SAFETY: Range is exclusive, so yielded random values will always be a valid index and within bounds
-            _ => unsafe { Some(list.get_unchecked(self.usize(..list.len()))) },
+        self.sample_iter(list.iter())
+    }
+
+    /// Samples a random item from an iterator of values. `O(1)` if the
+    /// iterator provides an accurate [`Iterator::size_hint`] to allow
+    /// for optimisations to kick in, else `O(n)` where `n` is the size
+    /// of the iterator.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// assert_eq!(rng.sample_iter(values.iter_mut()), Some(&mut 5));
+    /// ```
+    #[inline]
+    fn sample_iter<T: Iterator>(&self, mut list: T) -> Option<T::Item> {
+        // Adapted from: https://docs.rs/rand/latest/rand/seq/trait.IteratorRandom.html#method.choose
+        let (mut lower, mut upper) = list.size_hint();
+
+        if upper == Some(lower) {
+            return match lower {
+                0 => None,
+                1 => list.next(),
+                _ => list.nth(self.usize(0..lower)),
+            };
+        }
+
+        let mut result = None;
+        let mut consumed = 0;
+
+        // Continue until the iterator is exhausted
+        loop {
+            if lower > 1 {
+                let index = self.usize(0..lower + consumed);
+                let skip = if index < lower {
+                    result = list.nth(index);
+                    lower - (index + 1)
+                } else {
+                    lower
+                };
+
+                if upper == Some(lower) {
+                    return result;
+                }
+
+                consumed += lower;
+
+                if skip > 0 {
+                    list.nth(skip - 1);
+                }
+            } else {
+                let elem = list.next();
+
+                if elem.is_none() {
+                    return result;
+                }
+
+                consumed += 1;
+
+                match consumed {
+                    1 => {
+                        result = elem;
+                    }
+                    _ => {
+                        if self.usize(0..consumed) == 0 {
+                            result = elem;
+                        }
+                    }
+                };
+            }
+
+            let hint = list.size_hint();
+            lower = hint.0;
+            upper = hint.1;
         }
     }
 
@@ -387,13 +456,7 @@ pub trait TurboRand: TurboCore + GenCore {
     /// ```
     #[inline]
     fn sample_mut<'a, T>(&self, list: &'a mut [T]) -> Option<&'a mut T> {
-        match list.len() {
-            0 => None,
-            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
-            1 => unsafe { Some(list.get_unchecked_mut(0)) },
-            // SAFETY: Range is exclusive, so yielded random values will always be a valid index and within bounds
-            _ => unsafe { Some(list.get_unchecked_mut(self.usize(..list.len()))) },
-        }
+        self.sample_iter(list.iter_mut())
     }
 
     /// Samples multiple unique items from a slice of values.
@@ -409,15 +472,10 @@ pub trait TurboRand: TurboCore + GenCore {
     /// assert_eq!(rng.sample_multiple(&values, 2), vec![&6, &4]);
     /// ```
     #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[inline]
     fn sample_multiple<'a, T>(&self, list: &'a [T], amount: usize) -> Vec<&'a T> {
-        let draining = list.len().min(amount);
-
-        let mut shuffled: Vec<&'a T> = list.iter().collect();
-
-        self.shuffle(&mut shuffled);
-
-        shuffled.drain(0..draining).collect()
+        self.sample_multiple_iter(list.iter(), amount)
     }
 
     /// Samples multiple unique items from a mutable slice of values.
@@ -437,15 +495,55 @@ pub trait TurboRand: TurboCore + GenCore {
     /// assert_eq!(rng.sample_multiple_mut(&mut values, 2), vec![&mut 6, &mut 4]);
     /// ```
     #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[inline]
     fn sample_multiple_mut<'a, T>(&self, list: &'a mut [T], amount: usize) -> Vec<&'a mut T> {
-        let draining = list.len().min(amount);
+        self.sample_multiple_iter(list.iter_mut(), amount)
+    }
 
-        let mut shuffled: Vec<&'a mut T> = list.iter_mut().collect();
+    /// Samples multiple unique items from an iterator of values.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// assert_eq!(rng.sample_multiple_iter(values.iter(), 2), vec![&6, &4]);
+    /// ```
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[inline]
+    fn sample_multiple_iter<T: Iterator>(&self, mut list: T, amount: usize) -> Vec<T::Item> {
+        // Adapted from: https://docs.rs/rand/latest/rand/seq/trait.IteratorRandom.html#method.choose_multiple
+        let mut sampled = Vec::with_capacity(amount);
 
-        self.shuffle(&mut shuffled);
+        sampled.extend(list.by_ref().take(amount));
 
-        shuffled.drain(0..draining).collect()
+        // Continue unless the iterator was exhausted.
+        // Note: this prevents iterators that "restart" from causing problems.
+        // If the iterator stops once, then so do we.
+        if sampled.len() == amount {
+            list.enumerate()
+                .map(|(index, elem)| {
+                    let len = index + amount;
+
+                    (self.usize(0..=len), elem)
+                })
+                .for_each(|(slot_index, elem)| {
+                    if let Some(slot) = sampled.get_mut(slot_index) {
+                        *slot = elem;
+                    }
+                });
+        } else {
+            // Shrink sampled vector if the available amount from the iterator
+            // is less than the requested amount.
+            sampled.shrink_to_fit();
+        }
+
+        sampled
     }
 
     /// [Stochastic Acceptance](https://arxiv.org/abs/1109.3627) implementation of Roulette Wheel
@@ -453,7 +551,7 @@ pub trait TurboRand: TurboCore + GenCore {
     /// to decide whether to return it or not. The returned `f64` value must be between `0.0` and `1.0`.
     ///
     /// Returns `None` if given an empty list to sample from. For a list containing 1 item, it'll always
-    /// return that item regardless.
+    /// return that item regardless. Otherwise, operations are O(1) in complexity, and require no allocations.
     ///
     /// # Panics
     ///
@@ -469,12 +567,12 @@ pub trait TurboRand: TurboCore + GenCore {
     ///
     /// let total = f64::from(values.iter().sum::<i32>());
     ///
-    /// assert_eq!(rng.weighted_sample(&values, |&item| item as f64 / total), Some(&4));
+    /// assert_eq!(rng.weighted_sample(&values, |(&item, _)| item as f64 / total), Some(&4));
     /// ```
     #[inline]
     fn weighted_sample<'a, T, F>(&self, list: &'a [T], weight_sampler: F) -> Option<&'a T>
     where
-        F: Fn(&T) -> f64,
+        F: Fn((&T, usize)) -> f64,
     {
         // Check how many items are in the list
         match list.len() {
@@ -483,11 +581,19 @@ pub trait TurboRand: TurboCore + GenCore {
             // Only a single value in list, therefore sampling will always yield that value.
             // SAFETY: Length already known to be 1, therefore index 0 will yield an item
             1 => unsafe { Some(list.get_unchecked(0)) },
-            // Sample the list, flatten the `Option<&T>` and then check if it passes the
-            // weighted chance. Keep repeating until `.find` yields a value.
-            _ => repeat_with(|| self.sample(list))
-                .flatten()
-                .find(|&item| self.chance(weight_sampler(item))),
+            // Sample the list, and then check if it passes the weighted chance.
+            // Keep repeating until a value succeds and return that.
+            len => loop {
+                let index = self.usize(0..len);
+                // SAFETY: Index already known to be within bounds, and the random
+                // usize will therefore always select an element within the bounds of
+                // the list.
+                let item = unsafe { list.get_unchecked(index) };
+
+                if self.chance(weight_sampler((item, index))) {
+                    return Some(item);
+                }
+            },
         }
     }
 
@@ -496,7 +602,7 @@ pub trait TurboRand: TurboCore + GenCore {
     /// to decide whether to return it or not. The returned `f64` value must be between `0.0` and `1.0`.
     ///
     /// Returns `None` if given an empty list to sample from. For a list containing 1 item, it'll always
-    /// return that item regardless.
+    /// return that item regardless. Otherwise, operations are O(1) in complexity, and require no allocations.
     ///
     /// **NOTE**: Mutable references must be dropped before more can be
     /// sampled from the source slice. If a sampling tries to yield a mutable
@@ -516,11 +622,11 @@ pub trait TurboRand: TurboCore + GenCore {
     ///
     /// let total = f64::from(values.iter().sum::<i32>());
     ///
-    /// let result1 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    /// let result1 = rng.weighted_sample_mut(&mut values, |(&item, _)| item as f64 / total);
     ///
     /// assert_eq!(result1, Some(&mut 4));
     ///
-    /// let result2 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    /// let result2 = rng.weighted_sample_mut(&mut values, |(&item, _)| item as f64 / total);
     ///
     /// assert_eq!(result2, Some(&mut 5));
     ///
@@ -529,7 +635,7 @@ pub trait TurboRand: TurboCore + GenCore {
     /// // time
     /// drop(result2);
     ///
-    /// let result3 = rng.weighted_sample_mut(&mut values, |&item| item as f64 / total);
+    /// let result3 = rng.weighted_sample_mut(&mut values, |(&item, _)| item as f64 / total);
     ///
     /// // Weighted sample in this example will favour larger numbers, so 5 gets picked
     /// // again.
@@ -537,12 +643,12 @@ pub trait TurboRand: TurboCore + GenCore {
     /// ```
     #[inline]
     fn weighted_sample_mut<'a, T, F>(
-        &'a self,
+        &self,
         list: &'a mut [T],
         weight_sampler: F,
     ) -> Option<&'a mut T>
     where
-        F: Fn(&T) -> f64,
+        F: Fn((&T, usize)) -> f64,
     {
         // Check how many items are in the list
         match list.len() {
@@ -551,15 +657,25 @@ pub trait TurboRand: TurboCore + GenCore {
             // Only a single value in list, therefore sampling will always yield that value.
             // SAFETY: Length already known to be 1, therefore index 0 will yield an item
             1 => unsafe { Some(list.get_unchecked_mut(0)) },
-            // Sample the list, flatten the `Option<&T>` and then check if it passes the
-            // weighted chance. Keep repeating until `.find` yields a value.
-            _ => repeat_with(|| self.usize(..list.len()))
-                // SAFETY: The resolved index will always be within bounds, since the list here
-                // is not zero length and has more than 1 element available.
-                .find(|&index| self.chance(weight_sampler(unsafe { list.get_unchecked(index) })))
-                // SAFETY: The resolved index will always be within bounds, since the list here
-                // is not zero length and has more than 1 element available.
-                .map(|index| unsafe { list.get_unchecked_mut(index) }),
+            // Sample the list, and then check if it passes the weighted chance.
+            // Keep repeating until a value succeds and return that.
+            len => loop {
+                let index = self.usize(0..len);
+
+                if self.chance(weight_sampler((
+                    // SAFETY: Index already known to be within bounds, and the random
+                    // usize will therefore always select an element within the bounds of
+                    // the list.
+                    unsafe { list.get_unchecked(index) },
+                    index,
+                ))) {
+                    // Get again in order to avoid borrowing restrictions within mut loops.
+                    // SAFETY: Index already known to be within bounds, and the random
+                    // usize will therefore always select an element within the bounds of
+                    // the list.
+                    return unsafe { Some(list.get_unchecked_mut(index)) };
+                }
+            },
         }
     }
 

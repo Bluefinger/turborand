@@ -13,6 +13,9 @@ use getrandom::{getrandom, Error};
 /// failure.
 #[inline]
 fn fallback_entropy<B: AsMut<[u8]>>(mut buffer: B) -> Result<(), Error> {
+    // If we reach this point, RandomState is unlikely to be random, as
+    // not even getrandom can yield valid entropy sources. So don't bother
+    // and instead find other means of generating entropy from available sources.
     let mut hasher = DefaultHasher::new();
     Instant::now().hash(&mut hasher);
     thread::current().id().hash(&mut hasher);

@@ -1,4 +1,4 @@
 #[cfg(feature = "chacha")]
-pub mod chacha;
+pub(crate) mod chacha;
 #[cfg(feature = "wyrand")]
-pub mod wyrand;
+pub(crate) mod wyrand;

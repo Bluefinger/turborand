@@ -662,10 +662,13 @@ pub trait TurboRand: TurboCore + GenCore {
             len => loop {
                 let index = self.usize(0..len);
 
-                // SAFETY: Index already known to be within bounds, and the random
-                // usize will therefore always select an element within the bounds of
-                // the list.
-                if self.chance(weight_sampler((unsafe { list.get_unchecked(index) }, index))) {
+                if self.chance(weight_sampler((
+                    // SAFETY: Index already known to be within bounds, and the random
+                    // usize will therefore always select an element within the bounds of
+                    // the list.
+                    unsafe { list.get_unchecked(index) },
+                    index,
+                ))) {
                     // Get again in order to avoid borrowing restrictions within mut loops.
                     // SAFETY: Index already known to be within bounds, and the random
                     // usize will therefore always select an element within the bounds of

@@ -98,6 +98,62 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
         let rand = Rng::default();
         b.iter(|| black_box(rand.f32_normalized()));
     });
+    c.bench_function("CellRng sample", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data)))
+    });
+    c.bench_function("CellRng sample one", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data[0..1])))
+    });
+    c.bench_function("CellRng sample iter", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data.iter())))
+    });
+    c.bench_function("CellRng sample iter one", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
+    });
+    c.bench_function("CellRng weighted sample", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+    });
+    c.bench_function("CellRng weighted sample mut", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| {
+            let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);
+        })
+    });
 }
 
 #[cfg(feature = "atomic")]
@@ -198,6 +254,62 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     c.bench_function("AtomicRng f32 normalized", |b| {
         let rand = AtomicRng::default();
         b.iter(|| black_box(rand.f32_normalized()));
+    });
+    c.bench_function("AtomicRng sample", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data)))
+    });
+    c.bench_function("AtomicRng sample one", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data[0..1])))
+    });
+    c.bench_function("AtomicRng sample iter", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data.iter())))
+    });
+    c.bench_function("AtomicRng sample iter one", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
+    });
+    c.bench_function("AtomicRng weighted sample", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+    });
+    c.bench_function("AtomicRng weighted sample mut", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| {
+            let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);
+        })
     });
 }
 
@@ -300,6 +412,62 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
     c.bench_function("ChaChaRng f32 normalized", |b| {
         let rand = ChaChaRng::default();
         b.iter(|| black_box(rand.f32_normalized()));
+    });
+    c.bench_function("ChaChaRng sample", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data)))
+    });
+    c.bench_function("ChaChaRng sample one", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample(&data[0..1])))
+    });
+    c.bench_function("ChaChaRng sample iter", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data.iter())))
+    });
+    c.bench_function("ChaChaRng sample iter one", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0u8; 2048];
+
+        rand.fill_bytes(&mut data);
+
+        b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
+    });
+    c.bench_function("ChaChaRng weighted sample", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+    });
+    c.bench_function("ChaChaRng weighted sample mut", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| {
+            let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);
+        })
     });
 }
 

@@ -722,7 +722,7 @@ fn weighted_sample_spread_testing() {
     let actual_histogram: BTreeMap<u32, _> = repeat_with(|| {
         // Select items from the array based on their value divided by the total sum to
         // form their weighting.
-        rng.weighted_sample(&samples, |&item| f64::from(item) / sample_total_weight)
+        rng.weighted_sample(&samples, |(&item, _)| f64::from(item) / sample_total_weight)
     })
     .take(1000)
     .flatten()

@@ -579,19 +579,16 @@ pub trait TurboRand: TurboCore + GenCore {
             // No values in list, therefore return None.
             0 => None,
             // Only a single value in list, therefore sampling will always yield that value.
-            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
-            1 => unsafe { Some(list.get_unchecked(0)) },
+            1 => list.get(0),
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {
-                let index = self.usize(0..len);
-                // SAFETY: Index already known to be within bounds, and the random
-                // usize will therefore always select an element within the bounds of
-                // the list.
-                let item = unsafe { list.get_unchecked(index) };
+                let index = self.usize(..len);
 
-                if self.chance(weight_sampler((item, index))) {
-                    return Some(item);
+                if let Some(item) = list.get(index) {
+                    if self.chance(weight_sampler((item, index))) {
+                        return Some(item);
+                    }
                 }
             },
         }
@@ -655,25 +652,17 @@ pub trait TurboRand: TurboCore + GenCore {
             // No values in list, therefore return None.
             0 => None,
             // Only a single value in list, therefore sampling will always yield that value.
-            // SAFETY: Length already known to be 1, therefore index 0 will yield an item
-            1 => unsafe { Some(list.get_unchecked_mut(0)) },
+            1 => list.get_mut(0),
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {
-                let index = self.usize(0..len);
+                let index = self.usize(..len);
 
-                if self.chance(weight_sampler((
-                    // SAFETY: Index already known to be within bounds, and the random
-                    // usize will therefore always select an element within the bounds of
-                    // the list.
-                    unsafe { list.get_unchecked(index) },
-                    index,
-                ))) {
-                    // Get again in order to avoid borrowing restrictions within mut loops.
-                    // SAFETY: Index already known to be within bounds, and the random
-                    // usize will therefore always select an element within the bounds of
-                    // the list.
-                    return unsafe { Some(list.get_unchecked_mut(index)) };
+                if let Some(item) = list.get(index) {
+                    if self.chance(weight_sampler((item, index))) {
+                        // Get again in order to avoid borrowing restrictions within mut loops.
+                        return list.get_mut(index);
+                    }
                 }
             },
         }

@@ -22,6 +22,7 @@ where
 
 #[cfg(feature = "std")]
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn char_battery_tests() {
     // ASCII control chars.
     let nul = 0u8 as char;

@@ -4,7 +4,30 @@
 
 - Prepare release
 
+## [0.9.0] - 2023-01-18
+
+### Chore
+
+- Fix formatting
+
+### Feat
+
+- No-std compatibility and finer-grained features (#29)
+- New sampling iterator methods
+
+### Perf
+
+- Weighted sampling improvements & benches
+
+### Refactor
+
+- Remove some unnecessary unsafe
+
 ## [0.8.3] - 2022-12-20
+
+### Chore
+
+- Prepare release
 
 ### Feat
 

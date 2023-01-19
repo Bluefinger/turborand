@@ -85,6 +85,16 @@ Also, the serialisation format of `ChaChaRng` has changed, so 0.7 is not compati
 
 Version 0.8 seperates the old `Clone` behaviour into two: standard `Clone` which maintains the original state and clones it to the new instance as is (and so both old and new equal to each other), and `ForkableCore` which mutates the state of the original to _fork_ a new instance with a random state generated from the original. **Previous usage of `.clone()` now should make use of `.fork()` instead**. Cloning now should be used where preserving the state of the original to the cloned instance is required.
 
+## Migration from 0.8 to 0.9
+
+Version 0.9 introduces `no-std` compatibility with more granular features as well as minor changes to `weighted_sample`.
+
+For `no-std` compatibility, new feature flags have been created. By default, `std` feature flag is enabled and with `fmt` providing `Debug` implementations. Without default features, `turborand` will expose only methods and implementations that are compatible with `no-std` environments. `alloc` is provided as a feature flag for enabling some methods like `sample_multiple`, which require at least `alloc` crate support. Traits like `Default` and methods like `new()` are only supported in `std` environments.
+
+For `weighted_sample` and `weighted_sample_mut`, the `weight_sampler` signature has changed from `Fn(&T) -> f64` to `Fn((&T, usize)) -> f64`. The tuple provides not just a reference to the sampled item, but the index as well. There's also a correction to the `weighted_sample` and `weighted_sample_mut` lifetimes which should fix some typing issues.
+
+Other minor changes include some removal of `unsafe` that are no longer necessary with some internal refactors, as well as `sample_iter` and `sample_multiple_iter` methods.
+
 ## License
 
 Licensed under either of

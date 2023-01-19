@@ -287,6 +287,15 @@ pub trait TurboRand: TurboCore + GenCore {
         "Returns a random `f32` value between `-1.0` and `1.0`."
     );
 
+    /// Returns a `usize` value for stable indexing across different
+    /// word size platforms.
+    #[inline]
+    fn index(&self, bound: usize) -> usize {
+        // `bound` will always either be u64 or smaller as `usize`, so it will
+        // never overflow on a u64 bound.
+        self.u64(..(bound as u64)) as usize
+    }
+
     /// Returns a random boolean value.
     ///
     /// # Example
@@ -378,7 +387,7 @@ pub trait TurboRand: TurboCore + GenCore {
             return match lower {
                 0 => None,
                 1 => list.next(),
-                _ => list.nth(self.usize(0..lower)),
+                _ => list.nth(self.index(lower)),
             };
         }
 
@@ -388,7 +397,7 @@ pub trait TurboRand: TurboCore + GenCore {
         // Continue until the iterator is exhausted
         loop {
             if lower > 1 {
-                let index = self.usize(0..lower + consumed);
+                let index = self.index(lower + consumed);
                 let skip = if index < lower {
                     result = list.nth(index);
                     lower - (index + 1)
@@ -419,7 +428,7 @@ pub trait TurboRand: TurboCore + GenCore {
                         result = elem;
                     }
                     _ => {
-                        if self.usize(0..consumed) == 0 {
+                        if self.index(consumed) == 0 {
                             result = elem;
                         }
                     }
@@ -528,9 +537,9 @@ pub trait TurboRand: TurboCore + GenCore {
         if sampled.len() == amount {
             list.enumerate()
                 .map(|(index, elem)| {
-                    let len = index + amount;
+                    let len = index + amount + 1;
 
-                    (self.usize(0..=len), elem)
+                    (self.index(len), elem)
                 })
                 .for_each(|(slot_index, elem)| {
                     if let Some(slot) = sampled.get_mut(slot_index) {
@@ -583,7 +592,7 @@ pub trait TurboRand: TurboCore + GenCore {
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {
-                let index = self.usize(..len);
+                let index = self.index(len);
 
                 if let Some(item) = list.get(index) {
                     if self.chance(weight_sampler((item, index))) {
@@ -656,7 +665,7 @@ pub trait TurboRand: TurboCore + GenCore {
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {
-                let index = self.usize(..len);
+                let index = self.index(len);
 
                 if let Some(item) = list.get(index) {
                     if self.chance(weight_sampler((item, index))) {
@@ -687,7 +696,7 @@ pub trait TurboRand: TurboCore + GenCore {
     fn shuffle<T>(&self, slice: &mut [T]) {
         (1..slice.len())
             .rev()
-            .for_each(|index| slice.swap(index, self.usize(..=index)));
+            .for_each(|index| slice.swap(index, self.index(index + 1)));
     }
 
     trait_rand_chars!(

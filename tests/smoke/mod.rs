@@ -397,6 +397,35 @@ fn signed_range_spread_test() {
     );
 }
 
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn stable_indexing_smoke_testing() {
+    let rng = Rng::with_seed(Default::default());
+
+    let first = 128;
+    let second = (u16::MAX as usize) + 128;
+
+    let index = rng.index(first);
+
+    assert_eq!(&index, &102);
+
+    for _ in 0..1000 {
+        let index = rng.index(first);
+
+        assert!((..first).contains(&index));
+    }
+
+    let index = rng.index(second);
+
+    assert_eq!(&index, &47423);
+
+    for _ in 0..1000 {
+        let index = rng.index(second);
+
+        assert!((..second).contains(&index));
+    }
+}
+
 #[cfg(feature = "std")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -620,7 +649,7 @@ fn chacha_rng_spread_test() {
 }
 
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sample_spread_testing() {
     let rng = Rng::with_seed(Default::default());
 
@@ -641,7 +670,7 @@ fn sample_spread_testing() {
 }
 
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sample_iter_spread_testing() {
     let rng = Rng::with_seed(Default::default());
 
@@ -663,7 +692,7 @@ fn sample_iter_spread_testing() {
 
 #[cfg(feature = "alloc")]
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sample_multiple_spread_testing() {
     let rng = Rng::with_seed(Default::default());
 
@@ -687,7 +716,7 @@ fn sample_multiple_spread_testing() {
 
 #[cfg(feature = "alloc")]
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sample_multiple_iter_spread_testing() {
     let rng = Rng::with_seed(Default::default());
 
@@ -711,7 +740,7 @@ fn sample_multiple_iter_spread_testing() {
 
 #[cfg(feature = "alloc")]
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn weighted_sample_spread_testing() {
     let rng = Rng::with_seed(Default::default());
 
@@ -747,7 +776,7 @@ fn weighted_sample_spread_testing() {
 }
 
 #[test]
-#[cfg(target_pointer_width = "64")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn shuffle_smoke_testing() {
     let rng = Rng::with_seed(Default::default());
 

@@ -20,17 +20,6 @@ impl std::ops::Deref for AlignedSeed {
 }
 
 #[inline]
-pub(super) fn increment_counter(mut state: [u32; 16]) -> [u32; 16] {
-    let counter = ((state[13] as u64) << 32) | (state[12] as u64);
-
-    let counter = counter.wrapping_add(1);
-
-    state[12] = (counter & 0xFFFF_FFFF) as u32;
-    state[13] = ((counter >> 32) & 0xFFFF_FFFF) as u32;
-    state
-}
-
-#[inline]
 const fn pack_into_u32(input: &[u8]) -> u32 {
     assert!(input.len() == 4);
 
@@ -85,28 +74,28 @@ fn quarter_round<const A: usize, const B: usize, const C: usize, const D: usize>
 pub(super) fn calculate_block<const DOUBLE_ROUNDS: usize>(state: &[u32; 16]) -> [u32; 16] {
     assert!(DOUBLE_ROUNDS % 2 == 0, "DOUBLE_ROUNDS must be even number");
 
-    let mut new_state = *state;
+    let mut new_block = *state;
 
     // 8 Rounds of ChaCha, 4 loops * 2 rounds per loop = 8 Rounds
     for _ in 0..DOUBLE_ROUNDS {
         // Odd Rounds
-        quarter_round::<0, 4, 8, 12>(&mut new_state);
-        quarter_round::<1, 5, 9, 13>(&mut new_state);
-        quarter_round::<2, 6, 10, 14>(&mut new_state);
-        quarter_round::<3, 7, 11, 15>(&mut new_state);
+        quarter_round::<0, 4, 8, 12>(&mut new_block);
+        quarter_round::<1, 5, 9, 13>(&mut new_block);
+        quarter_round::<2, 6, 10, 14>(&mut new_block);
+        quarter_round::<3, 7, 11, 15>(&mut new_block);
         // Even Rounds
-        quarter_round::<0, 5, 10, 15>(&mut new_state);
-        quarter_round::<1, 6, 11, 12>(&mut new_state);
-        quarter_round::<2, 7, 8, 13>(&mut new_state);
-        quarter_round::<3, 4, 9, 14>(&mut new_state);
+        quarter_round::<0, 5, 10, 15>(&mut new_block);
+        quarter_round::<1, 6, 11, 12>(&mut new_block);
+        quarter_round::<2, 7, 8, 13>(&mut new_block);
+        quarter_round::<3, 4, 9, 14>(&mut new_block);
     }
 
-    new_state
+    new_block
         .iter_mut()
         .zip(state.iter())
         .for_each(|(new, &old)| *new = new.wrapping_add(old));
 
-    new_state
+    new_block
 }
 
 #[cfg(test)]

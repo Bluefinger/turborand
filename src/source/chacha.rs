@@ -96,7 +96,9 @@ impl ChaCha8 {
 
         self.set_counter(counter);
 
-        overflowed.then(|| self.set_iv(self.get_iv().wrapping_add(1)));
+        if overflowed {
+            self.set_iv(self.get_iv().wrapping_add(1));
+        }
     }
 
     #[inline]
@@ -114,6 +116,7 @@ impl ChaCha8 {
         self.cache.empty_buffer();
     }
 
+    #[inline]
     fn generate(&self) -> [u32; 16] {
         let new_block = calculate_block::<4>(self.get_state());
 

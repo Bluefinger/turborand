@@ -65,7 +65,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
     c.bench_function("CellRng index", |b| {
         let rand = Rng::default();
         let bound = 20;
-        b.iter(|| black_box(rand.index(bound)));
+        b.iter(|| black_box(rand.index(..bound)));
     });
     c.bench_function("CellRng isize range", |b| {
         let rand = Rng::default();
@@ -227,7 +227,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     c.bench_function("AtomicRng index", |b| {
         let rand = AtomicRng::default();
         let bound = 20;
-        b.iter(|| black_box(rand.index(bound)));
+        b.iter(|| black_box(rand.index(..bound)));
     });
     c.bench_function("AtomicRng isize range", |b| {
         let rand = AtomicRng::default();
@@ -390,7 +390,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
     c.bench_function("ChaChaRng index", |b| {
         let rand = ChaChaRng::default();
         let bound = 20;
-        b.iter(|| black_box(rand.index(bound)));
+        b.iter(|| black_box(rand.index(..bound)));
     });
     c.bench_function("ChaChaRng isize range", |b| {
         let rand = ChaChaRng::default();

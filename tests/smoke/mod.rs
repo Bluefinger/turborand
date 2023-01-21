@@ -405,22 +405,22 @@ fn stable_indexing_smoke_testing() {
     let first = 128;
     let second = (u16::MAX as usize) + 128;
 
-    let index = rng.index(first);
+    let index = rng.index(..first);
 
     assert_eq!(&index, &102);
 
     for _ in 0..1000 {
-        let index = rng.index(first);
+        let index = rng.index(..first);
 
         assert!((..first).contains(&index));
     }
 
-    let index = rng.index(second);
+    let index = rng.index(..second);
 
     assert_eq!(&index, &47423);
 
     for _ in 0..1000 {
-        let index = rng.index(second);
+        let index = rng.index(..second);
 
         assert!((..second).contains(&index));
     }

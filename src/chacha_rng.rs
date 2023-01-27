@@ -1,7 +1,7 @@
 //! A cryptographically secure PRNG (CSPRNG) based on [ChaCha8](https://cr.yp.to/chacha.html).
 use crate::{
     source::chacha::{utils::AlignedSeed, ChaCha8},
-    ForkableCore, GenCore, SecureCore, SeededCore, TurboCore,
+    ForkableCore, GenCore, SecureCore, SeededCore, TurboCore, TurboKind,
 };
 
 #[cfg(feature = "std")]
@@ -46,6 +46,8 @@ impl TurboCore for ChaChaRng {
 }
 
 impl GenCore for ChaChaRng {
+    const GEN_KIND: TurboKind = TurboKind::SLOW;
+
     #[inline]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         self.0.rand()
@@ -112,7 +114,7 @@ mod tests {
     fn no_leaking_debug() {
         let rng = ChaChaRng::with_seed([0u8; 40]);
 
-        assert_eq!(format!("{:?}", rng), "ChaChaRng(ChaCha8)");
+        assert_eq!(format!("{rng:?}"), "ChaChaRng(ChaCha8)");
     }
 
     #[cfg(feature = "serialize")]

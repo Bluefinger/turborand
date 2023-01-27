@@ -144,7 +144,7 @@ impl ChaCha8 {
 impl Clone for ChaCha8 {
     fn clone(&self) -> Self {
         Self {
-            state: UnsafeCell::new(self.get_state().clone()),
+            state: UnsafeCell::new(*self.get_state()),
             cache: self.cache.clone(),
         }
     }
@@ -280,7 +280,7 @@ mod tests {
     fn no_leaking_debug() {
         let source = ChaCha8::with_seed([0u8; 40].into());
 
-        assert_eq!(format!("{:?}", source), "ChaCha8");
+        assert_eq!(format!("{source:?}"), "ChaCha8");
     }
 
     #[test]

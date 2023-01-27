@@ -2,7 +2,7 @@
 
 use crate::{
     internal::state::CellState, source::wyrand::WyRand, ForkableCore, GenCore, SeededCore,
-    TurboCore,
+    TurboCore, TurboKind,
 };
 
 #[cfg(feature = "std")]
@@ -50,6 +50,8 @@ impl TurboCore for Rng {
 }
 
 impl GenCore for Rng {
+    const GEN_KIND: TurboKind = TurboKind::FAST;
+
     #[inline]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         self.0.rand()
@@ -187,6 +189,8 @@ impl TurboCore for AtomicRng {
 
 #[cfg(feature = "atomic")]
 impl GenCore for AtomicRng {
+    const GEN_KIND: TurboKind = TurboKind::FAST;
+
     #[inline]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         self.0.rand()
@@ -228,7 +232,7 @@ mod tests {
     fn rng_no_leaking_debug() {
         let rng = Rng::with_seed(Default::default());
 
-        assert_eq!(format!("{:?}", rng), "Rng(WyRand(CellState))");
+        assert_eq!(format!("{rng:?}"), "Rng(WyRand(CellState))");
     }
 
     #[cfg(all(feature = "fmt", feature = "atomic"))]
@@ -236,7 +240,7 @@ mod tests {
     fn atomic_no_leaking_debug() {
         let rng = AtomicRng::with_seed(Default::default());
 
-        assert_eq!(format!("{:?}", rng), "AtomicRng(WyRand(AtomicState))");
+        assert_eq!(format!("{rng:?}"), "AtomicRng(WyRand(AtomicState))");
     }
 
     #[cfg(feature = "rand")]
@@ -258,8 +262,7 @@ mod tests {
 
         assert_eq!(
             result, 14_839_104_130_206_199_084,
-            "Should receive expect random u64 output, got {} instead",
-            result
+            "Should receive expect random u64 output, got {result} instead",
         );
 
         let mut rng = Rng::with_seed(Default::default());
@@ -270,8 +273,7 @@ mod tests {
 
         assert_eq!(
             result, 14_839_104_130_206_199_084,
-            "Should receive expect random u64 output, got {} instead",
-            result
+            "Should receive expect random u64 output, got {result} instead",
         );
     }
 

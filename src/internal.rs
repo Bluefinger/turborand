@@ -4,3 +4,5 @@ pub(crate) mod buffer;
 
 #[cfg(feature = "wyrand")]
 pub(crate) mod state;
+
+pub(crate) mod uniform;

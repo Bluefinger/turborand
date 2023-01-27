@@ -147,6 +147,6 @@ mod tests {
     fn no_leaking_debug() {
         let rng = WyRand::<CellState>::with_seed(Default::default());
 
-        assert_eq!(format!("{:?}", rng), "WyRand(CellState)");
+        assert_eq!(format!("{rng:?}"), "WyRand(CellState)");
     }
 }

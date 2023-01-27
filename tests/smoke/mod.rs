@@ -7,23 +7,23 @@ fn range_determinism_testing() {
 
     let value = rng.u64(1..10);
 
-    assert_eq!(value, 8, "Not the same expected value: got {}", value);
+    assert_eq!(value, 8, "Not the same expected value: got {value}");
 
     let value = rng.u32(1..10);
 
-    assert_eq!(value, 2, "Not the same expected value: got {}", value);
+    assert_eq!(value, 2, "Not the same expected value: got {value}");
 
     let value = rng.u16(1..10);
 
-    assert_eq!(value, 9, "Not the same expected value: got {}", value);
+    assert_eq!(value, 9, "Not the same expected value: got {value}");
 
     let value = rng.u8(1..10);
 
-    assert_eq!(value, 5, "Not the same expected value: got {}", value);
+    assert_eq!(value, 5, "Not the same expected value: got {value}");
 
     let value = rng.bool();
 
-    assert!(value, "Not the expect boolean: got {}", value);
+    assert!(value, "Not the expect boolean: got {value}");
 }
 
 #[cfg(feature = "std")]
@@ -37,8 +37,7 @@ fn range_smoke_testing() {
 
         assert!(
             (4..10).contains(&index),
-            "Must generate a number within 4 and 10, received: {}",
-            index
+            "Must generate a number within 4 and 10, received: {index}",
         );
     }
 
@@ -47,8 +46,7 @@ fn range_smoke_testing() {
 
         assert!(
             (..20).contains(&index),
-            "Must generate a number within 0 and 20, received: {}",
-            index
+            "Must generate a number within 0 and 20, received: {index}",
         );
     }
 
@@ -57,8 +55,7 @@ fn range_smoke_testing() {
 
         assert!(
             (4..=15).contains(&index),
-            "Must generate a number within 4 and inclusively 15, received: {}",
-            index
+            "Must generate a number within 4 and inclusively 15, received: {index}",
         );
     }
 
@@ -67,28 +64,25 @@ fn range_smoke_testing() {
 
         assert!(
             (-10..10).contains(&index),
-            "Must generate a number within -10 and 10, received: {}",
-            index
+            "Must generate a number within -10 and 10, received: {index}",
         );
     }
 
     for _ in 0..1000 {
-        let value = rng.u128(6..61);
+        let index = rng.u128(6..61);
 
         assert!(
-            (6..61).contains(&value),
-            "Must generate a number within 6 and 61, received: {}",
-            value
+            (6..61).contains(&index),
+            "Must generate a number within 6 and 61, received: {index}",
         );
     }
 
     for _ in 0..1000 {
-        let value = rng.i128(-20..20);
+        let index = rng.i128(-20..20);
 
         assert!(
-            (-20..20).contains(&value),
-            "Must generate a number within -20 and 20, received: {}",
-            value
+            (-20..20).contains(&index),
+            "Must generate a number within -20 and 20, received: {index}",
         );
     }
 }
@@ -104,8 +98,7 @@ fn float_smoke_testing() {
 
         assert!(
             (0.0..=1.0).contains(&index),
-            "Must generate a number within 0.0 and 1.0, received: {}",
-            index
+            "Must generate a number within 0.0 and 1.0, received: {index}",
         );
     }
 
@@ -114,8 +107,7 @@ fn float_smoke_testing() {
 
         assert!(
             (-1.0..=1.0).contains(&index),
-            "Must generate a number within -1.0 and 1.0, received: {}",
-            index
+            "Must generate a number within -1.0 and 1.0, received: {index}",
         );
     }
 
@@ -124,8 +116,7 @@ fn float_smoke_testing() {
 
         assert!(
             (0.0..=1.0).contains(&index),
-            "Must generate a number within 0.0 and 1.0, received: {}",
-            index
+            "Must generate a number within 0.0 and 1.0, received: {index}",
         );
     }
 
@@ -134,8 +125,7 @@ fn float_smoke_testing() {
 
         assert!(
             (-1.0..=1.0).contains(&index),
-            "Must generate a number within -1.0 and 1.0, received: {}",
-            index
+            "Must generate a number within -1.0 and 1.0, received: {index}",
         );
     }
 }
@@ -437,8 +427,7 @@ fn character_smoke_testing() {
 
         assert!(
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".contains(character),
-            "Must output an alphabetic character within range, received '{}'",
-            character
+            "Must output an alphabetic character within range, received '{character}'",
         );
     }
 
@@ -447,8 +436,7 @@ fn character_smoke_testing() {
 
         assert!(
             "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".contains(character),
-            "Must output an alphanumeric character within range, received '{}'",
-            character
+            "Must output an alphanumeric character within range, received '{character}'",
         );
     }
 
@@ -457,8 +445,7 @@ fn character_smoke_testing() {
 
         assert!(
             "abcdefghijklmnopqrstuvwxyz".contains(character),
-            "Must output a lowercase character within range, received '{}'",
-            character
+            "Must output a lowercase character within range, received '{character}'",
         );
     }
 
@@ -467,8 +454,7 @@ fn character_smoke_testing() {
 
         assert!(
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(character),
-            "Must output an uppercase character within range, received '{}'",
-            character
+            "Must output an uppercase character within range, received '{character}'",
         );
     }
 }
@@ -484,8 +470,7 @@ fn digit_smoke_testing() {
 
         assert!(
             "0123456789".contains(digit),
-            "Must output a digit within radix, received '{}'",
-            digit
+            "Must output a digit within radix, received '{digit}'",
         );
     }
 
@@ -494,8 +479,7 @@ fn digit_smoke_testing() {
 
         assert!(
             "01".contains(digit),
-            "Must output a digit within radix, received '{}'",
-            digit
+            "Must output a digit within radix, received '{digit}'",
         );
     }
 
@@ -504,8 +488,7 @@ fn digit_smoke_testing() {
 
         assert!(
             "01234567".contains(digit),
-            "Must output a digit within radix, received '{}'",
-            digit
+            "Must output a digit within radix, received '{digit}'",
         );
     }
 
@@ -514,8 +497,7 @@ fn digit_smoke_testing() {
 
         assert!(
             "0123456789abcdef".contains(digit),
-            "Must output a digit within radix, received '{}'",
-            digit
+            "Must output a digit within radix, received '{digit}'",
         );
     }
 
@@ -524,8 +506,7 @@ fn digit_smoke_testing() {
 
         assert!(
             "0123456789abcdefghijklmnopqrstuvwxyz".contains(digit),
-            "Must output a digit within radix, received '{}'",
-            digit
+            "Must output a digit within radix, received '{digit}'",
         );
     }
 }
@@ -586,7 +567,7 @@ fn chacha_rng_smoke_test() {
     }
 }
 
-#[cfg(feature = "chacha")]
+#[cfg(all(feature = "chacha", feature = "alloc"))]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn chacha_rng_spread_test() {
@@ -782,9 +763,97 @@ fn shuffle_smoke_testing() {
 
     let mut values = [1, 2, 3, 4, 5, 6];
 
-    repeat_with(|| &rng)
-        .take(100)
-        .for_each(|r| r.shuffle(&mut values));
+    for _ in 0..100 {
+        rng.shuffle(&mut values);
+    }
 
     assert_eq!(&values, &[2, 5, 3, 1, 6, 4]);
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn shuffle_spread_testing() {
+    let rng = Rng::with_seed(Default::default());
+
+    let mut values: [u32; 6] = [0, 1, 2, 3, 4, 5];
+
+    let actual_histogram: BTreeMap<usize, _> = repeat_with(|| {
+        // Shuffle the values then copy the list
+        rng.shuffle(&mut values);
+
+        values
+    })
+    .take(1000)
+    .fold(BTreeMap::new(), |mut histogram, res| {
+        let index = res
+            .iter()
+            .enumerate()
+            .find(|(_, &num)| num == 0)
+            .map(|(index, _)| index)
+            .unwrap();
+
+        *histogram.entry(index).or_default() += 1;
+
+        histogram
+    });
+
+    // Expected indexes tracking where the value 0 ends up at after being shuffled.
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (0, 183),
+        (1, 168),
+        (2, 139),
+        (3, 188),
+        (4, 173),
+        (5, 149),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "shuffled value positions should match in frequency to the expected histogram"
+    );
+}
+
+#[cfg(all(feature = "chacha", feature = "alloc"))]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn chacha_shuffle_spread_testing() {
+    let rng = ChaChaRng::with_seed([0; 40]);
+
+    let mut values: [u32; 6] = [0, 1, 2, 3, 4, 5];
+
+    let actual_histogram: BTreeMap<usize, _> = repeat_with(|| {
+        // Shuffle the values then copy the list
+        rng.shuffle(&mut values);
+
+        values
+    })
+    .take(1000)
+    .fold(BTreeMap::new(), |mut histogram, res| {
+        let index = res
+            .iter()
+            .enumerate()
+            .find(|(_, &num)| num == 0)
+            .map(|(index, _)| index)
+            .unwrap();
+
+        *histogram.entry(index).or_default() += 1;
+
+        histogram
+    });
+
+    // Expected indexes tracking where the value 0 ends up at after being shuffled.
+    let expected_histogram = BTreeMap::from_iter(vec![
+        (0, 166),
+        (1, 163),
+        (2, 161),
+        (3, 184),
+        (4, 169),
+        (5, 157),
+    ]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "shuffled value positions should match in frequency to the expected histogram"
+    );
 }

@@ -868,8 +868,7 @@ pub trait TurboRand: TurboCore + GenCore {
                 } else {
                     x as u32 + 1
                 };
-                char::try_from(scalar)
-                    .unwrap_or_else(|_| panic!("Invalid exclusive lower character bound"))
+                char::from_u32(scalar).expect("Invalid exclusive lower character bound")
             }
         };
 
@@ -882,8 +881,7 @@ pub trait TurboRand: TurboCore + GenCore {
                 } else {
                     (x as u32).wrapping_sub(1)
                 };
-                char::try_from(scalar)
-                    .unwrap_or_else(|_| panic!("Invalid exclusive upper character bound"))
+                char::from_u32(scalar).expect("Invalid exclusive upper character bound")
             }
         };
 
@@ -898,14 +896,14 @@ pub trait TurboRand: TurboCore + GenCore {
             0
         };
 
-        let range = upper_scalar - lower_scalar - gap;
-        let mut val = self.u32(0..=range) + lower_scalar;
+        let range = upper_scalar - gap;
+        let mut val = self.u32(lower_scalar..=range);
 
         if val >= SURROGATE_START {
             val += gap;
         }
 
-        val.try_into().unwrap()
+        char::from_u32(val).unwrap()
     }
 }
 

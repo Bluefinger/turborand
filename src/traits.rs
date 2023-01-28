@@ -3,6 +3,17 @@ use core::ops::{Bound, RangeBounds};
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
 
+use crate::internal::uniform::IncreasingUniformIter;
+
+/// Enum for determining the kind of PRNG, whether a fast one,
+/// or a slow, possibly crypographically secure one.
+pub enum TurboKind {
+    /// Variant for fast PRNGs, like Wyrand.
+    FAST,
+    /// Variant for slower PRNGs, like ChaCha8.
+    SLOW,
+}
+
 /// Base trait for implementing a PRNG. Only one method must be
 /// implemented: [`TurboCore::fill_bytes`], which provides the basis
 /// for any PRNG, to fill a buffer of bytes with random data.
@@ -60,6 +71,13 @@ pub trait TurboCore {
 /// [`TurboCore::fill_bytes`] if the PRNG implementation provides a means to
 /// output directly an array of const size.
 pub trait GenCore: TurboCore {
+    /// Determines the kind of PRNG. [`TurboKind::FAST`] RNGs are meant to be very
+    /// quick, non-cryptographic PRNGs, while [`TurboKind::SLOW`] are slower,
+    /// more expensive PRNGs, usually CSPRNGs but not always. Setting this constant
+    /// allows for certain algorithms to be toggled for tuning performance of certain
+    /// methods.
+    const GEN_KIND: TurboKind;
+
     /// Returns an array of constant `SIZE` containing random `u8` values.
     ///
     /// # Example
@@ -343,8 +361,7 @@ pub trait TurboRand: TurboCore + GenCore {
 
         assert!(
             (0.0..=1.0).contains(&rate),
-            "rate value is not between 0.0 and 1.0, received {}",
-            rate
+            "rate value is not between 0.0 and 1.0, received {rate}",
         );
 
         let rate_int = (rate * SCALE) as u64;
@@ -704,9 +721,67 @@ pub trait TurboRand: TurboCore + GenCore {
     /// ```
     #[inline]
     fn shuffle<T>(&self, slice: &mut [T]) {
-        (1..slice.len())
-            .rev()
-            .for_each(|index| slice.swap(index, self.index(..=index)));
+        match slice.len() {
+            // Don't bother trying to shuffle an empty list or a single item list.
+            len if len < 2 => (),
+            len => {
+                self.partial_shuffle(slice, len);
+            }
+        }
+    }
+
+    /// Partially shuffles a slice by a given amount and returns the shuffled part
+    /// and non-shuffled part.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let mut values = [1, 2, 3, 4, 5];
+    ///
+    /// let (shuffled, rest) = rng.partial_shuffle(&mut values, 2);
+    ///
+    /// assert_eq!(shuffled, &mut [2, 5]);
+    /// assert_eq!(rest, &mut [1, 4, 3]);
+    /// ```
+    #[inline]
+    fn partial_shuffle<'a, T>(
+        &self,
+        slice: &'a mut [T],
+        amount: usize,
+    ) -> (&'a mut [T], &'a mut [T]) {
+        let len = slice.len();
+
+        assert!(len > 1);
+
+        let n = len.saturating_sub(amount);
+
+        match Self::GEN_KIND {
+            // Some algorithms are just much faster with the naive approach than with the
+            // increasing uniform approach. Wyrand's algorithm is consistently faster than
+            // the increasing uniform algorithm, so don't bother trying to optimise. This does
+            // make the shuffling output different for different algorithms, but that
+            // is expected anyway.
+            TurboKind::FAST => {
+                ((n.max(1))..len)
+                    .rev()
+                    .for_each(|index| slice.swap(index, self.index(..=index)));
+            }
+            // The Increasing Uniform approach differ's from `rand`'s in that here we are
+            // optimising for the 64-bit platforms, not 32-bit. Nowadays, 64-bit platforms
+            // are more common, and 32-bit is more on the embedded side. Plus, with Wyrand
+            // using the fast, naive approach, this approach below would be used for ChaCha8
+            // which is slower, but more secure.
+            TurboKind::SLOW => {
+                IncreasingUniformIter::new(self, n as u64, len)
+                    .for_each(|(current_index, swap_index)| slice.swap(current_index, swap_index));
+            }
+        };
+
+        let res = slice.split_at_mut(n);
+        (res.1, res.0)
     }
 
     trait_rand_chars!(
@@ -880,6 +955,8 @@ impl<T: TurboCore + ?Sized> TurboCore for Box<T> {
 
 #[cfg(feature = "alloc")]
 impl<T: GenCore + ?Sized> GenCore for Box<T> {
+    const GEN_KIND: TurboKind = T::GEN_KIND;
+
     #[inline(always)]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         (**self).gen()
@@ -894,6 +971,8 @@ impl<'a, T: TurboCore + ?Sized> TurboCore for &'a T {
 }
 
 impl<'a, T: GenCore + ?Sized> GenCore for &'a T {
+    const GEN_KIND: TurboKind = T::GEN_KIND;
+
     #[inline(always)]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         (**self).gen()
@@ -908,6 +987,8 @@ impl<'a, T: TurboCore + ?Sized> TurboCore for &'a mut T {
 }
 
 impl<'a, T: GenCore + ?Sized> GenCore for &'a mut T {
+    const GEN_KIND: TurboKind = T::GEN_KIND;
+
     #[inline(always)]
     fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
         (**self).gen()
@@ -965,6 +1046,8 @@ mod tests {
     }
 
     impl GenCore for TestRng {
+        const GEN_KIND: TurboKind = TurboKind::FAST;
+
         fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
             std::array::from_fn(|_| self.next())
         }

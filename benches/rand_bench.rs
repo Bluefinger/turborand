@@ -139,6 +139,33 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
     });
+    c.bench_function("CellRng shuffle small", |b| {
+        let rand = Rng::default();
+
+        let mut data = [0.0; 8];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("CellRng shuffle large", |b| {
+        let rand = Rng::default();
+
+        let mut data = vec![0.0; u16::MAX as usize];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("CellRng shuffle xlarge", |b| {
+        let rand = Rng::default();
+
+        let mut data = vec![0.0; (u16::MAX as usize) * 10];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
     c.bench_function("CellRng weighted sample", |b| {
         let rand = Rng::default();
 
@@ -300,6 +327,33 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
         rand.fill_bytes(&mut data);
 
         b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
+    });
+    c.bench_function("AtomicRng shuffle small", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0.0; 8];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("AtomicRng shuffle large", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = vec![0.0; u16::MAX as usize];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("AtomicRng shuffle xlarge", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = vec![0.0; (u16::MAX as usize) * 10];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
     });
     c.bench_function("AtomicRng weighted sample", |b| {
         let rand = AtomicRng::default();
@@ -463,6 +517,33 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
         rand.fill_bytes(&mut data);
 
         b.iter(|| black_box(rand.sample_iter(data[0..1].iter())))
+    });
+    c.bench_function("ChaChaRng shuffle small", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0.0; 8];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("ChaChaRng shuffle large", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = vec![0.0; u16::MAX as usize];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
+    });
+    c.bench_function("ChaChaRng shuffle xlarge", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = vec![0.0; (u16::MAX as usize) * 10];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.shuffle(&mut data))
     });
     c.bench_function("ChaChaRng weighted sample", |b| {
         let rand = ChaChaRng::default();

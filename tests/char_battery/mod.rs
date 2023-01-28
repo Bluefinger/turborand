@@ -1,6 +1,6 @@
 use crate::*;
 
-use std::{collections::HashSet, convert::TryFrom, ops::RangeBounds};
+use std::{collections::HashSet, ops::RangeBounds};
 
 fn char_coverage_stress_test<R>(n: usize, range: R)
 where
@@ -30,14 +30,14 @@ fn char_battery_tests() {
     let stx = 2u8 as char;
     // Some undefined Hangul Jamo codepoints just before
     // the surrogate area.
-    let last_jamo = char::try_from(0xd7ffu32).unwrap();
-    let penultimate_jamo = char::try_from(last_jamo as u32 - 1).unwrap();
+    let last_jamo = char::from_u32(0xd7ffu32).unwrap();
+    let penultimate_jamo = char::from_u32(last_jamo as u32 - 1).unwrap();
     // Private-use codepoints just after the surrogate area.
-    let first_private = char::try_from(0xe000u32).unwrap();
-    let second_private = char::try_from(first_private as u32 + 1).unwrap();
+    let first_private = char::from_u32(0xe000u32).unwrap();
+    let second_private = char::from_u32(first_private as u32 + 1).unwrap();
     // Private-use codepoints at the end of Unicode space.
     let last_private = char::MAX;
-    let penultimate_private = char::try_from(last_private as u32 - 1).unwrap();
+    let penultimate_private = char::from_u32(last_private as u32 - 1).unwrap();
 
     char_coverage_stress_test(100, nul..stx);
     char_coverage_stress_test(100, nul..=soh);

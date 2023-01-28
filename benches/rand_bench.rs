@@ -103,6 +103,10 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
         let rand = Rng::default();
         b.iter(|| black_box(rand.f32_normalized()));
     });
+    c.bench_function("CellRng char", |b| {
+        let rand = Rng::default();
+        b.iter(|| black_box(rand.char('a'..='Ç')));
+    });
     c.bench_function("CellRng sample", |b| {
         let rand = Rng::default();
 
@@ -291,6 +295,10 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
     c.bench_function("AtomicRng f32 normalized", |b| {
         let rand = AtomicRng::default();
         b.iter(|| black_box(rand.f32_normalized()));
+    });
+    c.bench_function("AtomicRng char", |b| {
+        let rand = AtomicRng::default();
+        b.iter(|| black_box(rand.char('a'..='Ç')));
     });
     c.bench_function("AtomicRng sample", |b| {
         let rand = AtomicRng::default();
@@ -481,6 +489,10 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
     c.bench_function("ChaChaRng f32 normalized", |b| {
         let rand = ChaChaRng::default();
         b.iter(|| black_box(rand.f32_normalized()));
+    });
+    c.bench_function("ChaChaRng char", |b| {
+        let rand = ChaChaRng::default();
+        b.iter(|| black_box(rand.char('a'..='Ç')));
     });
     c.bench_function("ChaChaRng sample", |b| {
         let rand = ChaChaRng::default();

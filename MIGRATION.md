@@ -34,4 +34,4 @@ Other minor changes include some removal of `unsafe` that are no longer necessar
 
 ## Migration from 0.9 to 0.10
 
-Version 0.10 introduces `GenCore::GEN_KIND` associated constant, needed to be able to toggle between different algorithms for some methods which have different optimum profiles based on the speed of the PRNG and the algorithm itself. `Rng` and `ChaChaRng` now use different shuffling algorithms, with `ChaChaRng` changing compared to previous releases. The internal implementation of `ChaChaRng` has also changed, enabling better perf with a more standard ChaCha implementation.
+Version 0.10 introduces `GenCore::GEN_KIND` associated constant, needed to be able to toggle between different algorithms for some methods which have different optimum profiles based on the speed of the PRNG and the algorithm itself. `Rng` and `ChaChaRng` now use different shuffling algorithms, with `ChaChaRng` changing compared to previous releases. The internal implementation of `ChaChaRng` has also changed, enabling better perf with a more standard ChaCha implementation, though it now has a different output.

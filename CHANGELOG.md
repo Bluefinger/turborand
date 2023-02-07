@@ -4,11 +4,33 @@
 
 - Prepare release
 
-## [0.9.0] - 2023-01-18
+## [0.10.0] - 2023-02-07
+
+### Chore
+
+- Dedicated migration notes document
+
+### Feat
+
+- Stable indexing method and sampling
+- Optimise shuffle for different algorithms
+
+### Perf
+
+- Tuning and inlining tweaks
+
+### Refactor
+
+- Standardize internal implementation
+- Use range for index method
+- Tidied char impl with from_32 method
+
+## [0.9.0] - 2023-01-19
 
 ### Chore
 
 - Fix formatting
+- Prepare release
 
 ### Feat
 

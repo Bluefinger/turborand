@@ -142,9 +142,12 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "fmt")]
+    #[cfg(all(feature = "fmt", feature = "alloc"))]
     #[test]
     fn no_leaking_debug() {
+        #[cfg(all(feature = "alloc", not(feature = "std")))]
+        use alloc::format;
+
         let rng = WyRand::<CellState>::with_seed(Default::default());
 
         assert_eq!(format!("{rng:?}"), "WyRand(CellState)");

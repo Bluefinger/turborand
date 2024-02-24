@@ -1,6 +1,6 @@
 use core::ops::{Bound, RangeBounds};
 
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::internal::uniform::IncreasingUniformIter;
@@ -1047,7 +1047,7 @@ mod tests {
         const GEN_KIND: TurboKind = TurboKind::FAST;
 
         fn gen<const SIZE: usize>(&self) -> [u8; SIZE] {
-            std::array::from_fn(|_| self.next())
+            core::array::from_fn(|_| self.next())
         }
     }
 

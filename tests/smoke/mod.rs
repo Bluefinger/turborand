@@ -285,6 +285,8 @@ fn small_range_smoke_testing() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn unbounded_range_smoke_testing() {
+    use std::ops::RangeBounds;
+
     let rng = Rng::default();
 
     for _ in 0..1000 {

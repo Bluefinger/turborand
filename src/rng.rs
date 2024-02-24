@@ -227,9 +227,12 @@ mod tests {
 
     use super::*;
 
-    #[cfg(feature = "fmt")]
+    #[cfg(all(feature = "fmt", feature = "alloc"))]
     #[test]
     fn rng_no_leaking_debug() {
+        #[cfg(all(feature = "alloc", not(feature = "std")))]
+        use alloc::format;
+
         let rng = Rng::with_seed(Default::default());
 
         assert_eq!(format!("{rng:?}"), "Rng(WyRand(CellState))");

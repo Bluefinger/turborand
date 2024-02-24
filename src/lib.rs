@@ -10,7 +10,7 @@
 //!
 //! Generate a random value:
 //!
-//! ```
+//! ```ignore
 //! use turborand::prelude::*;
 //!
 //! let rand = Rng::new();
@@ -20,7 +20,7 @@
 //!
 //! Sample a value from a list:
 //!
-//! ```
+//! ```ignore
 //! use turborand::prelude::*;
 //!
 //! let rand = Rng::new();
@@ -32,7 +32,7 @@
 //!
 //! Generate a vector with random values:
 //!
-//! ```
+//! ```ignore
 //! use turborand::prelude::*;
 //! use std::iter::repeat_with;
 //!

@@ -221,9 +221,12 @@ mod tests {
         assert_eq!(state.get(), 11);
     }
 
-    #[cfg(feature = "fmt")]
+    #[cfg(all(feature = "fmt", feature = "alloc"))]
     #[test]
     fn cell_state_no_leaking_debug() {
+        #[cfg(all(feature = "alloc", not(feature = "std")))]
+        use alloc::format;
+
         let state = CellState::with_seed(Default::default());
 
         assert_eq!(format!("{state:?}"), "CellState");

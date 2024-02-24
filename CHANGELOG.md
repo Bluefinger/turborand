@@ -4,11 +4,22 @@
 
 - Prepare release
 
+## [0.10.1] - 2024-02-24
+
+### Chore
+
+- Update wasm docs, fix clippy warnings
+
+### Fix
+
+- No-std feature housekeeping
+
 ## [0.10.0] - 2023-02-07
 
 ### Chore
 
 - Dedicated migration notes document
+- Prepare release
 
 ### Feat
 

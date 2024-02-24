@@ -53,6 +53,17 @@ let values: Vec<_> = repeat_with(|| rand.f32()).take(10).collect();
 
 `turborand` can be exposed to `no-std` environments, however only with reduced capability and feature sets. There'll be no `Default` implementations, and no `new()` constructors, so `Rng`/`ChaChaRng` seeds must be provided by the user from whatever source available on the platform. Some `TurboRand` methods will also not be available unless the `alloc` feature is enabled, which necessitates having a global allocator.
 
+## Compiling for WASM
+
+For suppporting WASM builds, you'll need to add the following to your `Cargo.toml`:
+
+```toml
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+instant = { version = "0.1", features = ["wasm-bindgen"] }
+```
+
+`instant` needs either the `wasm-bindgen` or `stdweb` feature active on WASM in order to compile. `stdweb` however is unmaintained, but to support future alternatives and features, toggling on WASM support is left to the user of this crate.
+
 ## Performance
 
 `Wyrand` is a pretty fast PRNG, and is a good choice when speed is needed while still having decent statistical properties. Currently, the `turborand` implementation benches extremely well against similar `rand` algorithms. Below is a chart of the `fill_bytes` method performance, tested on Windows 10 x64 on an AMD Ryzen 1700 clocked at 3.7Ghz with 32GB RAM at 3066Mhz.

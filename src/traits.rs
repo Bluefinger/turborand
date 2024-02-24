@@ -615,7 +615,7 @@ pub trait TurboRand: TurboCore + GenCore {
             // No values in list, therefore return None.
             0 => None,
             // Only a single value in list, therefore sampling will always yield that value.
-            1 => list.get(0),
+            1 => list.first(),
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {
@@ -688,7 +688,7 @@ pub trait TurboRand: TurboCore + GenCore {
             // No values in list, therefore return None.
             0 => None,
             // Only a single value in list, therefore sampling will always yield that value.
-            1 => list.get_mut(0),
+            1 => list.first_mut(),
             // Sample the list, and then check if it passes the weighted chance.
             // Keep repeating until a value succeds and return that.
             len => loop {

@@ -11,7 +11,7 @@ use getrandom::{getrandom, Error};
 /// This is a fallback in case other sources are not available. It is not meant
 /// to be super secure, but to provide at least something in case of absolute
 /// failure.
-#[inline]
+#[inline(never)]
 fn fallback_entropy<B: AsMut<[u8]>>(mut buffer: B) -> Result<(), Error> {
     // If we reach this point, RandomState is unlikely to be random, as
     // not even getrandom can yield valid entropy sources. So don't bother

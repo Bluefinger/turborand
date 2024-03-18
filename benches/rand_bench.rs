@@ -171,16 +171,25 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
         b.iter(|| rand.shuffle(&mut data))
     });
     c.bench_function("CellRng weighted sample", |b| {
-        let rand = Rng::default();
+        let rand = Rng::with_seed(black_box(42));
 
         let mut data = [0.0; 2048];
 
         data.iter_mut().for_each(|slot| *slot = rand.f64());
 
-        b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+        b.iter(|| rand.weighted_sample(&data, |(&item, _)| item))
+    });
+    c.bench_function("CellRng weighted sample iter", |b| {
+        let rand = Rng::with_seed(black_box(42));
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| rand.weighted_sample_iter(data.iter(), |(&&item, _)| item))
     });
     c.bench_function("CellRng weighted sample mut", |b| {
-        let rand = Rng::default();
+        let rand = Rng::with_seed(black_box(42));
 
         let mut data = [0.0; 2048];
 
@@ -371,6 +380,15 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
         data.iter_mut().for_each(|slot| *slot = rand.f64());
 
         b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+    });
+    c.bench_function("AtomicRng weighted sample iter", |b| {
+        let rand = AtomicRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| black_box(rand.weighted_sample_iter(data.iter(), |(&&item, _)| item)))
     });
     c.bench_function("AtomicRng weighted sample mut", |b| {
         let rand = AtomicRng::default();
@@ -565,6 +583,15 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
         data.iter_mut().for_each(|slot| *slot = rand.f64());
 
         b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
+    });
+    c.bench_function("ChaChaRng weighted sample iter", |b| {
+        let rand = ChaChaRng::default();
+
+        let mut data = [0.0; 2048];
+
+        data.iter_mut().for_each(|slot| *slot = rand.f64());
+
+        b.iter(|| black_box(rand.weighted_sample_iter(data.iter(), |(&&item, _)| item)))
     });
     c.bench_function("ChaChaRng weighted sample mut", |b| {
         let rand = ChaChaRng::default();

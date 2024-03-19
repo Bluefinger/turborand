@@ -621,12 +621,71 @@ pub trait TurboRand: TurboCore + GenCore {
             len => loop {
                 let index = self.index(..len);
 
-                if let Some(item) = list.get(index) {
-                    if self.chance(weight_sampler((item, index))) {
-                        return Some(item);
-                    }
+                if let Some(item) = list
+                    .get(index)
+                    .filter(|&item| self.chance(weight_sampler((item, index))))
+                {
+                    return Some(item);
                 }
             },
+        }
+    }
+
+    /// [Stochastic Acceptance](https://arxiv.org/abs/1109.3627) implementation of Roulette Wheel
+    /// weighted selection. Uses a closure to return a `rate` value for each randomly sampled item
+    /// to decide whether to return it or not. The returned `f64` value must be between `0.0` and `1.0`.
+    ///
+    /// Returns `None` if given an empty iterator to sample from. For an iterator containing 1 item, it'll always
+    /// return that item regardless. Otherwise, operations are O(1) in complexity, and require no allocations.
+    ///
+    /// Note, this method requires an `Iterator` that implements `Clone`, as it needs to reset and re-run the
+    /// `Iterator` every time a sample is unsuccessful in picking an item.
+    ///
+    /// # Panics
+    ///
+    /// If the returned value of the `weight_sampler` closure is not between `0.0` and `1.0`.
+    ///
+    /// # Example
+    /// ```
+    /// use turborand::prelude::*;
+    ///
+    /// let rng = Rng::with_seed(Default::default());
+    ///
+    /// let values = [1, 2, 3, 4, 5, 6];
+    ///
+    /// let total = f64::from(values.iter().sum::<i32>());
+    ///
+    /// assert_eq!(rng.weighted_sample_iter(values.into_iter(), |(&item, _)| item as f64 / total), Some(4));
+    /// ```
+    #[inline]
+    fn weighted_sample_iter<T, F>(&self, mut list: T, weight_sampler: F) -> Option<T::Item>
+    where
+        T: Iterator + Clone,
+        F: Fn((&T::Item, usize)) -> f64,
+    {
+        let (lower, _) = list.size_hint();
+
+        match lower {
+            0 => None,
+            1 => list.next(),
+            _ => {
+                let mut sampler = list.clone();
+
+                loop {
+                    let selected = self.index(..lower);
+
+                    match sampler
+                        .by_ref()
+                        .nth(selected)
+                        .filter(|item| self.chance(weight_sampler((item, selected))))
+                    {
+                        None => {
+                            sampler = list.clone();
+                        }
+                        Some(item) => return Some(item),
+                    };
+                }
+            }
         }
     }
 
@@ -694,11 +753,12 @@ pub trait TurboRand: TurboCore + GenCore {
             len => loop {
                 let index = self.index(..len);
 
-                if let Some(item) = list.get(index) {
-                    if self.chance(weight_sampler((item, index))) {
-                        // Get again in order to avoid borrowing restrictions within mut loops.
-                        return list.get_mut(index);
-                    }
+                if list
+                    .get(index)
+                    .filter(|&item| self.chance(weight_sampler((item, index))))
+                    .is_some()
+                {
+                    return list.get_mut(index);
                 }
             },
         }

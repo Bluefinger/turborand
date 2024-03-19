@@ -758,6 +758,43 @@ fn weighted_sample_spread_testing() {
     );
 }
 
+#[cfg(feature = "alloc")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn weighted_sample_iter_spread_testing() {
+    let rng = Rng::with_seed(Default::default());
+
+    let samples: [u32; 5] = [0, 1, 2, 3, 4];
+
+    let sample_total_weight = f64::from(samples.iter().sum::<u32>());
+
+    let actual_histogram: BTreeMap<u32, _> = repeat_with(|| {
+        // Select items from the array based on their value divided by the total sum to
+        // form their weighting.
+        rng.weighted_sample_iter(samples.iter(), |(&item, _)| f64::from(*item) / sample_total_weight)
+    })
+    .take(1000)
+    .flatten()
+    .fold(
+        BTreeMap::from_iter(vec![(0, 0)]),
+        |mut histogram, &individual| {
+            *histogram.entry(individual).or_default() += 1;
+
+            histogram
+        },
+    );
+
+    // Larger values are expected to be selected more often. 0 should never be
+    // selected ever.
+    let expected_histogram =
+        BTreeMap::from_iter(vec![(0, 0), (1, 92), (2, 207), (3, 294), (4, 407)]);
+
+    assert_eq!(
+        actual_histogram, expected_histogram,
+        "weighted samples should match in frequency to the expected histogram"
+    );
+}
+
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn shuffle_smoke_testing() {

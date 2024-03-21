@@ -48,7 +48,7 @@ impl<S: State> WyRand<S> {
     }
 
     #[inline]
-    pub fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
+    pub(crate) fn fill<B: AsMut<[u8]>>(&self, mut buffer: B) {
         let mut output = buffer.as_mut();
 
         while output.len() >= 8 {

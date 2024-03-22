@@ -150,7 +150,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = [0.0; 8];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -159,7 +159,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; u16::MAX as usize];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -168,7 +168,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; (u16::MAX as usize) * 10];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -177,7 +177,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.weighted_sample(&data, |(&item, _)| item))
     });
@@ -186,7 +186,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.weighted_sample_iter(data.iter(), |(&&item, _)| item))
     });
@@ -195,7 +195,7 @@ fn turborand_cell_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| {
             let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);
@@ -352,7 +352,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = [0.0; 8];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -361,7 +361,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; u16::MAX as usize];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -370,7 +370,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; (u16::MAX as usize) * 10];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -379,7 +379,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
     });
@@ -388,7 +388,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| black_box(rand.weighted_sample_iter(data.iter(), |(&&item, _)| item)))
     });
@@ -397,7 +397,7 @@ fn turborand_atomic_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| {
             let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);
@@ -555,7 +555,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = [0.0; 8];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -564,7 +564,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; u16::MAX as usize];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -573,7 +573,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; (u16::MAX as usize) * 10];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| rand.shuffle(&mut data))
     });
@@ -582,7 +582,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| black_box(rand.weighted_sample(&data, |(&item, _)| item)))
     });
@@ -591,7 +591,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| black_box(rand.weighted_sample_iter(data.iter(), |(&&item, _)| item)))
     });
@@ -600,7 +600,7 @@ fn turborand_chacha_benchmark(c: &mut Criterion) {
 
         let mut data = vec![0.0; 2048];
 
-        data.iter_mut().for_each(|slot| *slot = rand.f64());
+        rand.fill(&mut data[..]);
 
         b.iter(|| {
             let _ = rand.weighted_sample_mut(&mut data, |(&item, _)| item);

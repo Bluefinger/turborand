@@ -8,6 +8,8 @@ macro_rules! gen_int_const {
     };
 }
 
+pub(crate) use gen_int_const;
+
 macro_rules! trait_range_int {
     ($value:tt, $unsigned:tt, $bigger:ty, $source:ident, $doc:tt) => {
         #[doc = $doc]
@@ -55,6 +57,8 @@ macro_rules! trait_range_int {
     };
 }
 
+pub(crate) use trait_range_int;
+
 macro_rules! trait_float_gen {
     ($name:ident, $value:tt, $int:ty, $scale:expr, $source:ident, $doc:tt) => {
         #[doc = $doc]
@@ -70,6 +74,8 @@ macro_rules! trait_float_gen {
     };
 }
 
+pub(crate) use trait_float_gen;
+
 macro_rules! trait_rand_chars {
     ($func:ident, $chars:expr, $doc:tt) => {
         #[doc = $doc]
@@ -81,3 +87,46 @@ macro_rules! trait_rand_chars {
         }
     };
 }
+
+pub(crate) use trait_rand_chars;
+
+macro_rules! trait_fillable_gen {
+    () => {};
+    ($t:ty) => {
+        impl Fillable for [$t] {
+            #[inline]
+            fn fill_random<R: GenCore + ?Sized>(&mut self, rng: &R) {
+                if !self.is_empty() {
+                    // SAFETY: The slice is not empty, therefore it is properly
+                    // initialised and aligned, so constructing a [u8] slice from
+                    // it is safe.
+                    rng.fill_bytes(unsafe {
+                        core::slice::from_raw_parts_mut(
+                            self.as_mut_ptr() as *mut u8,
+                            core::mem::size_of_val(self),
+                        )
+                    });
+                }
+            }
+        }
+
+        impl Fillable for [core::num::Wrapping<$t>] {
+            #[inline]
+            fn fill_random<R: GenCore + ?Sized>(&mut self, rng: &R) {
+                if !self.is_empty() {
+                    // SAFETY: The slice is not empty, therefore it is properly
+                    // initialised and aligned, so constructing a [u8] slice from
+                    // it is safe.
+                    rng.fill_bytes(unsafe {
+                        core::slice::from_raw_parts_mut(
+                            self.as_mut_ptr() as *mut u8,
+                            core::mem::size_of_val(self),
+                        )
+                    });
+                }
+            }
+        }
+    };
+}
+
+pub(crate) use trait_fillable_gen;

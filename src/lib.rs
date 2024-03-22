@@ -67,7 +67,7 @@
 //! * **`chacha`** - Enables [`chacha_rng::ChaChaRng`] for providing a more cryptographically
 //!   secure source of Rng. Note, this will be slower than [`rng::Rng`] in
 //!   throughput, but will produce much higher quality randomness. `no-std` compatible.
-#![warn(missing_docs, rust_2018_idioms)]
+#![warn(missing_docs)]
 #![forbid(clippy::undocumented_unsafe_blocks)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
@@ -107,7 +107,6 @@ use serde::de::Visitor;
 #[cfg(all(feature = "serialize", feature = "chacha"))]
 use serde::ser::{SerializeStruct, SerializeTuple};
 
-#[macro_use]
 mod methods;
 
 #[cfg(feature = "chacha")]
@@ -125,6 +124,8 @@ pub mod rng;
 mod source;
 mod traits;
 
-pub use traits::{ForkableCore, GenCore, SecureCore, SeededCore, TurboCore, TurboKind, TurboRand};
+pub use traits::{
+    Fillable, ForkableCore, GenCore, SecureCore, SeededCore, TurboCore, TurboKind, TurboRand,
+};
 
 pub mod prelude;
